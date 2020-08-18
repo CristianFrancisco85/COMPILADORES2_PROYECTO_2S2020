@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/COMPILADORES2_PROYECTO_2S2020/static/css/main.5f361e03.chunk.css",
+    "main.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/main.e9f1f636.chunk.js",
+    "main.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/main.e9f1f636.chunk.js.map",
+    "runtime-main.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/runtime-main.1932cb51.js",
+    "runtime-main.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/runtime-main.1932cb51.js.map",
+    "static/js/2.bc70d171.chunk.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.bc70d171.chunk.js",
+    "static/js/2.bc70d171.chunk.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.bc70d171.chunk.js.map",
+    "index.html": "/COMPILADORES2_PROYECTO_2S2020/index.html",
+    "precache-manifest.a1208848b54133c51c1e758534436dd6.js": "/COMPILADORES2_PROYECTO_2S2020/precache-manifest.a1208848b54133c51c1e758534436dd6.js",
+    "service-worker.js": "/COMPILADORES2_PROYECTO_2S2020/service-worker.js",
+    "static/css/main.5f361e03.chunk.css.map": "/COMPILADORES2_PROYECTO_2S2020/static/css/main.5f361e03.chunk.css.map",
+    "static/js/2.bc70d171.chunk.js.LICENSE.txt": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.bc70d171.chunk.js.LICENSE.txt",
+    "static/media/logo.svg": "/COMPILADORES2_PROYECTO_2S2020/static/media/logo.5d5d9eef.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.1932cb51.js",
+    "static/js/2.bc70d171.chunk.js",
+    "static/css/main.5f361e03.chunk.css",
+    "static/js/main.e9f1f636.chunk.js"
+  ]
+}
