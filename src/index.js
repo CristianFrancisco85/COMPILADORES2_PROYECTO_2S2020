@@ -1,14 +1,138 @@
-import React from 'react';
+//Importaciones Default
+import React, {useEffect} from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 
+//Importaciones de CodeMirror
+import {UnControlled as CodeMirror} from 'react-codemirror2';
+import 'codemirror/mode/javascript/javascript';
+import 'codemirror/theme/darcula.css';
+import 'codemirror/theme/lucario.css';
+import 'codemirror/lib/codemirror.css';
+
+//Importaciones de Estilos en General
+import  "./styles/styles.css"
+import 'bootstrap/dist/css/bootstrap.min.css';
+import $ from 'jquery';
+import Popper from 'popper.js';
+import 'bootstrap/dist/js/bootstrap.bundle.min';
+
+//Importaciones de funciones de JS
+import {print} from './scripts/mainScript.js'
+import {setCode} from './scripts/mainScript.js'
+import {setViewer} from './scripts/mainScript.js'
+import {CodeTxt} from './scripts/mainScript.js'
+
+
+
+//Creacion de areas de codigo
+
+function Editor(){ 
+
+  return (
+     <div className="col-md-6 divcontent ">
+      <h3>Entrada</h3>
+     <CodeMirror autoFocus={true} onChange={(editor, data, value) => {setCode(value)}} 
+       options={{
+         theme: 'darcula',
+         mode: 'javascript',
+         matchBrackets: true,
+         lineNumbers: true,}
+       }
+     />
+   </div>
+)}
+
+function Viewer(){
+  
+ return (
+    <div className="col-md-6 divcontent " >
+    <h3>Salida</h3>
+    <CodeMirror autoFocus={true}  
+       options={{
+         theme: 'darcula',
+         mode: 'javascript',
+         matchBrackets: true,
+         lineNumbers: true,}
+       }
+     />
+  </div>
+ )} 
+
+ function Console(){ 
+
+  return (
+     <div className="col-md-12 divcontent">
+      <h3>Consola</h3>
+     <CodeMirror autoFocus={true} 
+       options={{
+         theme: 'lucario',
+         lineNumbers: true,}
+       }
+     />
+   </div>
+)}
+
+
+//Creacion de Botones
+function BtnTranslate(props){
+  return(
+    <button className="btn btn-warning col-md-2 " onClick={print} >Traducir </button>
+  )
+
+}
+
+function BtnRun(){
+
+  return(
+    <button className="btn btn-success col-md-2 offset-md-1 " onClick={print} >Ejecutar </button>
+  )
+
+}
+
+function BtnReports(){
+
+  return(
+    <button className="btn btn-danger col-md-2 offset-md-1" onClick={print} >Reportes </button>
+  )
+
+}
+
+//Componente Principal
+
+function MainComponent(){
+
+  return (
+
+    <div className="container col-md-12">
+      
+      <div className=" row justify-content-center col-md-12 divcontent">
+        <BtnTranslate ></BtnTranslate>
+        <BtnRun ></BtnRun>
+        <BtnReports ></BtnReports>
+      </div>
+      
+      <div className=" row col-md-12 divcontent">
+        <Editor></Editor>
+        <Viewer></Viewer>
+      </div>
+
+      <div className=" row col-md-12 divcontent">
+        <Console></Console>
+      </div>
+
+    </div>
+    
+  );
+}
+
+
+
+
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+  <MainComponent/>,document.getElementById('root')
 );
 
 // If you want your app to work offline and load faster, you can change
