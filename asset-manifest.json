@@ -1,26 +1,26 @@
 {
   "files": {
-    "main.css": "/COMPILADORES2_PROYECTO_2S2020/static/css/main.99d80866.chunk.css",
-    "main.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/main.7e02402e.chunk.js",
-    "main.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/main.7e02402e.chunk.js.map",
+    "main.css": "/COMPILADORES2_PROYECTO_2S2020/static/css/main.357f118e.chunk.css",
+    "main.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/main.3fc5e323.chunk.js",
+    "main.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/main.3fc5e323.chunk.js.map",
     "runtime-main.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/runtime-main.1932cb51.js",
     "runtime-main.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/runtime-main.1932cb51.js.map",
-    "static/css/2.6587ec33.chunk.css": "/COMPILADORES2_PROYECTO_2S2020/static/css/2.6587ec33.chunk.css",
-    "static/js/2.2a84e1ef.chunk.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.2a84e1ef.chunk.js",
-    "static/js/2.2a84e1ef.chunk.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.2a84e1ef.chunk.js.map",
+    "static/css/2.92945869.chunk.css": "/COMPILADORES2_PROYECTO_2S2020/static/css/2.92945869.chunk.css",
+    "static/js/2.6097c33b.chunk.js": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.6097c33b.chunk.js",
+    "static/js/2.6097c33b.chunk.js.map": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.6097c33b.chunk.js.map",
     "index.html": "/COMPILADORES2_PROYECTO_2S2020/index.html",
-    "precache-manifest.57354596a7c9c354c5f9af2a6c62138d.js": "/COMPILADORES2_PROYECTO_2S2020/precache-manifest.57354596a7c9c354c5f9af2a6c62138d.js",
+    "precache-manifest.98cafe585395ee7f86206a0c5731b7bc.js": "/COMPILADORES2_PROYECTO_2S2020/precache-manifest.98cafe585395ee7f86206a0c5731b7bc.js",
     "service-worker.js": "/COMPILADORES2_PROYECTO_2S2020/service-worker.js",
-    "static/css/2.6587ec33.chunk.css.map": "/COMPILADORES2_PROYECTO_2S2020/static/css/2.6587ec33.chunk.css.map",
-    "static/css/main.99d80866.chunk.css.map": "/COMPILADORES2_PROYECTO_2S2020/static/css/main.99d80866.chunk.css.map",
-    "static/js/2.2a84e1ef.chunk.js.LICENSE.txt": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.2a84e1ef.chunk.js.LICENSE.txt",
+    "static/css/2.92945869.chunk.css.map": "/COMPILADORES2_PROYECTO_2S2020/static/css/2.92945869.chunk.css.map",
+    "static/css/main.357f118e.chunk.css.map": "/COMPILADORES2_PROYECTO_2S2020/static/css/main.357f118e.chunk.css.map",
+    "static/js/2.6097c33b.chunk.js.LICENSE.txt": "/COMPILADORES2_PROYECTO_2S2020/static/js/2.6097c33b.chunk.js.LICENSE.txt",
     "static/media/logo.svg": "/COMPILADORES2_PROYECTO_2S2020/static/media/logo.5d5d9eef.svg"
   },
   "entrypoints": [
     "static/js/runtime-main.1932cb51.js",
-    "static/css/2.6587ec33.chunk.css",
-    "static/js/2.2a84e1ef.chunk.js",
-    "static/css/main.99d80866.chunk.css",
-    "static/js/main.7e02402e.chunk.js"
+    "static/css/2.92945869.chunk.css",
+    "static/js/2.6097c33b.chunk.js",
+    "static/css/main.357f118e.chunk.css",
+    "static/js/main.3fc5e323.chunk.js"
   ]
 }
