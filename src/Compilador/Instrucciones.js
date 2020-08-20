@@ -49,12 +49,12 @@ const Tipo_Instruccion = {
 
 // Tipos de Datos
 const Tipo_Valor = {
-    NUMERO:         'NUMERO',
-    DECIMAL:        'DECIMAL',
+    NUMBER:         'NUMBER',
     ID:             'ID',
-    BOOLEANO:       'BOOLEANO',
-    CADENA:         'CADENA',
-    CARACTER:       'CARACTER'
+    BOOLEAN:        'BOOLEAN',
+    STRING:         'STRING',
+    VOID:           'VOID',
+    TYPE:           'TYPE'
 }
 
 let ErroresLexicos=[];
@@ -62,7 +62,34 @@ let ErroresSintacticos=[];
 let ErroresSemanticos=[];
 let Traduccion="";
 
+
 const AST_Tools = {
+
+    /**
+	* Operaciones Binarias (Arimeticas,Relacional,Logica)
+    * @param opIzq Operando Izquierdo 
+    * @param operandoDer Operando Derecho
+    * @param opTipo  Tipo De Operacion
+	 */
+	operacionBinaria: function(opIzq, opDer, opTipo) {
+		return {
+            OpIzq: opIzq,
+            OpDer: opDer,
+            OpTipo: opTipo
+        }
+	},
+
+	/**
+	 * Crea un nuevo valor
+	 * @param valor 
+	 * @param valTipo 
+	 */
+	crearValor: function(valor, valTipo) {
+		return {
+			Valor: valor,
+			Tipo: valTipo
+		}
+	},
 
     /**
 	 * Crea el bloque global, este contiene todo el codigo fuente
@@ -75,6 +102,56 @@ const AST_Tools = {
 			ErroresSintacticos:ErroresSintacticos
 		}
     },
+
+    /**
+	 * Crea Instrucción para una declaracion.
+	 * @param id 
+	 */
+	declaracion: function(id) {
+		return {
+			Tipo: Tipo_Instruccion.DECLARACION,
+			ID: id,
+		}
+    },
+
+    /**
+	* Crea Instrucción para una asignacion.
+	* @param id 
+	* @param valor 
+	*/
+	asignacion: function(id, valor) {
+		return {
+			Tipo: Tipo_Instruccion.ASIGNACION,
+			ID: id,
+			Valor : valor
+		}
+	},
+
+    /**
+	 * Crea un id
+	 * @param id 
+	 */
+	newID: function (id,tipo,valor) {
+		return{
+            ID:id,
+            Tipo:tipo,
+            Valor:valor
+        }
+    },
+    
+    /**
+	 * Crea una lista de ids
+	 * @param Primer ID
+	 */
+	newIDList: function (id,tipo) {
+        var ids = []; 
+		ids.push({
+            ID:id,
+            Tipo:tipo
+        })
+        return ids
+
+	},
 }
 
 const Translate_Tools ={
@@ -96,6 +173,18 @@ const Manejo_Errores = {
 			Fila:fila,
 		});
     },
+
+    /**
+    * Añade un nuevo error Sintactico
+	*/
+	addErrorSintactico:function(error,fila,columa){
+		ErroresSintacticos.push(
+		{
+			Error:error,
+			Fila:fila,
+			Columna:columa
+		});
+	},
 
     /**
      * Limpia los arreglos de errores
