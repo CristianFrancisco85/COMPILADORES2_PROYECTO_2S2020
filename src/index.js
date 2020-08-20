@@ -22,8 +22,10 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 //Importaciones de funciones de JS
 import {print} from './scripts/mainScript.js'
 import {setCode} from './scripts/mainScript.js'
+import {setLC} from './scripts/mainScript.js'
 import {setViewer} from './scripts/mainScript.js'
 import {CodeTxt} from './scripts/mainScript.js'
+import {parse} from './scripts/mainScript.js'
 
 
 
@@ -32,16 +34,20 @@ import {CodeTxt} from './scripts/mainScript.js'
 function Editor(){ 
 
   return (
-     <div className="col-md-6 divcontent ">
+    <div className="col-md-6 divcontent ">
       <h3>Entrada</h3>
-     <CodeMirror autoFocus={true} onChange={(editor, data, value) => {setCode(value)}} 
-       options={{
-         theme: 'darcula',
-         mode: 'javascript',
-         matchBrackets: true,
-         lineNumbers: true,}
-       }
-     />
+      <CodeMirror 
+        autoFocus={true} 
+        onChange={(editor, data, value) => {setCode(value)}} 
+        onCursorActivity={(editor, data, value) => {setLC(editor,document.getElementById("LCEditor"))}}
+        options={{
+          theme: 'darcula',
+          mode: 'javascript',
+          matchBrackets: true,
+          lineNumbers: true,}
+        }
+      />
+     <h6 id="LCEditor">L:0 C:0</h6>
    </div>
 )}
 
@@ -49,15 +55,18 @@ function Viewer(){
   
  return (
     <div className="col-md-6 divcontent " >
-    <h3>Salida</h3>
-    <CodeMirror autoFocus={true}  
-       options={{
-         theme: 'darcula',
-         mode: 'javascript',
-         matchBrackets: true,
-         lineNumbers: true,}
-       }
-     />
+      <h3>Salida</h3>
+      <CodeMirror 
+        autoFocus={true}  
+        onCursorActivity={(editor, data, value) => {setLC(editor,document.getElementById("LCViewer"))}}
+        options={{
+          theme: 'darcula',
+          mode: 'javascript',
+          matchBrackets: true,
+          lineNumbers: true,}
+        }
+    />
+    <h6 id="LCViewer">L:0 C:0</h6>
   </div>
  )} 
 
@@ -87,7 +96,7 @@ function BtnTranslate(props){
 function BtnRun(){
 
   return(
-    <button className="btn btn-success col-md-2 offset-md-1 " onClick={print} >Ejecutar </button>
+    <button className="btn btn-success col-md-2 offset-md-1 " onClick={parse} >Ejecutar </button>
   )
 
 }
@@ -114,12 +123,12 @@ function MainComponent(){
         <BtnReports ></BtnReports>
       </div>
       
-      <div className=" row col-md-12 divcontent">
+      <div className=" row col-md-12 ">
         <Editor></Editor>
         <Viewer></Viewer>
       </div>
 
-      <div className=" row col-md-12 divcontent">
+      <div className=" row col-md-12 ">
         <Console></Console>
       </div>
 
