@@ -23,14 +23,18 @@ const Tipo_Operacion = {
 	OR: 			'OR',
     NOT:   			'NOT',  	
     //ATRIBUTOS
-    ATRIBUTO:       'ATRIBUTO'
+    ATRIBUTO:       'ATRIBUTO',
+    //ARR
+    ACCESO_ARR:     'ACCESO_ARR'
 }
 // Tipos de Instrucciones
 const Tipo_Instruccion = {
     DECLARACION_LET:    'INS_DECLARACION_LET',
     DECLARACION_TYPE:   'INS_DECLARACION_TYPE',
     DECLARACION_CONST:  'INS_DECLARACION_CONST',
-	ASIGNACION:			'INS_ASIGANCION',
+    ASIGNACION:			'INS_ASIGANCION',
+    ASIGNACION_ARR:	    'INS_ASIGANCION_ARR',
+    ACCESO_ARR:	        'INS_ACCESO_ARR',
     ASIG_DECL:      	'INS_ASIGNACION_DECLARACION',
 	DECL_FUNCION:   	'INS_DECLARACION_FUNCION',
     LLAMADA_FUNCION:   	'INS_LLAMADA_FUNCION',
@@ -58,7 +62,12 @@ const Tipo_Valor = {
     BOOLEAN:        'BOOLEAN',
     STRING:         'STRING',
     VOID:           'VOID',
-    TYPE:           'TYPE',
+    NUMBER_ARR:     'NUMBER_ARR',
+    ID_ARR:         'ID_ARR',
+    BOOLEAN_ARR:    'BOOLEAN_ARR',
+    STRING_ARR:     'STRING_ARR',
+    VOID_ARR:       'VOID_ARR',
+    TYPE_ARR:       'TYPE_ARR',
     NULL:           'NULL'
 }
 
@@ -153,7 +162,22 @@ const AST_Tools = {
 			ID: id,
 			Valor : valor
 		}
-	},
+    },
+    
+    /**
+	* Crea Instrucción para una asignacion.
+	* @param id 
+	* @param valor 
+	*/
+	asignacionArr: function(id,pos,valor) {
+		return {
+			Tipo: Tipo_Instruccion.ASIGNACION_ARR,
+            ID: id,
+            Posicion:pos,
+			Valor : valor
+		}
+    },
+    
 
     /**
 	 * Crea un id
@@ -211,10 +235,10 @@ const AST_Tools = {
 	 * Crea un valor de type
 	 * @param id 
 	 */
-	newTypeVal: function (id,tipo) {
+	newTypeVal: function (id,valor) {
 		return{
             ID:id,
-            Valor:tipo,
+            Valor:valor,
         }
     },
     
@@ -222,11 +246,34 @@ const AST_Tools = {
 	 * Crea una lista de valores de un type
 	 * @param Primer ID
 	 */
-	newTypeValList: function (id,tipo) {
+	newTypeValList: function (id,valor) {
         var vals = []; 
 		vals.push({
             ID:id,
-            Valor:tipo
+            Valor:valor
+        })
+        return vals
+
+    },
+
+     /**
+	 * Crea un valor de array
+	 * @param id 
+	 */
+	newArrVal: function (valor) {
+		return{
+            Valor:valor,
+        }
+    },
+    
+    /**
+	 * Crea una lista de valores de un array
+	 * @param Primer ID
+	 */
+	newArrValList: function (valor) {
+        var vals = []; 
+		vals.push({
+            Valor:valor
         })
         return vals
 

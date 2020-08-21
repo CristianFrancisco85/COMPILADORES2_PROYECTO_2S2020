@@ -32,10 +32,13 @@
 "+"                         return 'OPMAS';
 "^"                         return 'OPCIRCU';
 
+"["                         return 'CORIZQ';
+"]"                         return 'CORDER';
 "("                         return 'PARIZQ';
 ")"                         return 'PARDER';
 "{"                         return 'LLAVIZQ';
 "}"                         return 'LLAVDER';
+
 
 ">="                        return 'MAYORIG';
 "<="                        return 'MENORIG';
@@ -127,6 +130,8 @@ instruccion
     | bloqueDoWhile                     {$$=$1}
     | bloqueFor                         {$$=$1}
     | bloqueSwitch                      {$$=$1}
+    | llamadaFuncion PUNTOYCOMA         {$$=$1}
+    | incremento_decremento PUNTOYCOMA  {$$=$1}
     | error PUNTOYCOMA                  {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined }           
 ;
 
@@ -139,16 +144,24 @@ declaracion_asignacion
 ;
 
 asignacion
-    : ID IGUAL expresion PUNTOYCOMA         {$$=AST_Tools.asignacion($1,$3)}
-    | atributos IGUAL expresion PUNTOYCOMA  {$$=AST_Tools.asignacion($1,$3)}
+    : ID IGUAL expresion PUNTOYCOMA                                 {$$=AST_Tools.asignacion($1,$3)}
+    | ID IGUAL CORIZQ listaArr CORDER PUNTOYCOMA                    {$$=AST_Tools.asignacion($1,$4)}
+    | ID CORIZQ expresion CORDER IGUAL expresion PUNTOYCOMA         {$$=AST_Tools.asignacionArr($1,$3,$6)}
+    | atributos IGUAL expresion PUNTOYCOMA                          {$$=AST_Tools.asignacion($1,$3)}
+    | atributos IGUAL CORIZQ listaArr CORDER PUNTOYCOMA             {$$=AST_Tools.asignacion($1,$4)}
 ;
 
 tipo
-    :STRING             {$$=Tipo_Valor.STRING}
-    |NUMBER             {$$=Tipo_Valor.NUMBER}
-    |BOOLEAN            {$$=Tipo_Valor.BOOLEAN}
-    |VOID               {$$=Tipo_Valor.VOID}
-    |ID                 {$$=$1}
+    :STRING                         {$$=Tipo_Valor.STRING}
+    |NUMBER                         {$$=Tipo_Valor.NUMBER}
+    |BOOLEAN                        {$$=Tipo_Valor.BOOLEAN}
+    |VOID                           {$$=Tipo_Valor.VOID}
+    |ID                             {$$=$1}
+    |STRING CORIZQ CORDER           {$$=Tipo_Valor.STRING_ARR}
+    |NUMBER CORIZQ CORDER           {$$=Tipo_Valor.NUMBER_ARR}
+    |BOOLEAN CORIZQ CORDER          {$$=Tipo_Valor.BOOLEAN_ARR}
+    |VOID CORIZQ CORDER             {$$=Tipo_Valor.VOID_ARR}
+    |ID CORIZQ CORDER               {$$=($1+"_ARR")}
 ;
 
 listaID
@@ -162,11 +175,21 @@ listaID
     |listaID COMA ID IGUAL expresion                    {$1.push(AST_Tools.newID($3,undefined,$5));}                         
     |ID DOSPUNTOS tipo IGUAL expresion                  {$$=AST_Tools.newIDList($1,$3,$5)}   
     |ID IGUAL expresion                                 {$$=AST_Tools.newIDList($1,undefined,$3)} 
+    //CON VALOR DE ARRAY
+    |listaID COMA ID DOSPUNTOS tipo IGUAL CORIZQ listaArr CORDER    {$1.push(AST_Tools.newID($3,$5,$8));}                        
+    |listaID COMA ID IGUAL CORIZQ listaArr CORDER                   {$1.push(AST_Tools.newID($3,undefined,$6));}                         
+    |ID DOSPUNTOS tipo IGUAL CORIZQ listaArr CORDER                 {$$=AST_Tools.newIDList($1,$3,$6)}   
+    |ID IGUAL CORIZQ listaArr CORDER                                {$$=AST_Tools.newIDList($1,undefined,$4)} 
     //CON VALOR DE TYPE
     |listaID COMA ID DOSPUNTOS tipo IGUAL LLAVIZQ listaVal LLAVDER     {$1.push(AST_Tools.newID($3,$5,$8));}                        
     |listaID COMA ID IGUAL LLAVIZQ listaVal LLAVDER                    {$1.push(AST_Tools.newID($3,undefined,$6));}                         
     |ID DOSPUNTOS tipo IGUAL LLAVIZQ listaVal LLAVDER                  {$$=AST_Tools.newIDList($1,$3,$5)}   
     |ID IGUAL LLAVIZQ listaVal LLAVDER                                 {$$=AST_Tools.newIDList($1,undefined,$4)} 
+;
+
+listaArr
+    : listaArr COMA expresion       {$1.push(AST_Tools.newArrVal($3))}
+    | expresion                     {$$=AST_Tools.newArrValList($1)}
 ;
 
 listaAttrib
@@ -197,10 +220,9 @@ expresion
 	| NUMERO							    { $$ = AST_Tools.crearValor(Number($1),Tipo_Valor.NUMBER); }
 	| ID                                    { $$ = AST_Tools.crearValor($1,Tipo_Valor.ID); }
     | CADENA                                { $$ = AST_Tools.crearValor($1,Tipo_Valor.STRING); }
-    | ID DECREMENTO                         { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.DECREMENTO); }
     | NUMERO DECREMENTO                     { $$ = AST_Tools.operacionBinaria (Number($1),undefined,Tipo_Operacion.DECREMENTO); }
-    | ID INCREMENTO                         { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.INCREMENTO); }
     | NUMERO INCREMENTO                     { $$ = AST_Tools.operacionBinaria (Number($1),undefined,Tipo_Operacion.INCREMENTO); }
+    | incremento_decremento                 { $$ = $1}
     //LOGICAS
     | expresion AND expresion               { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.AND);}
     | expresion OR expresion                { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.OR);}
@@ -215,16 +237,28 @@ expresion
     | expresion MENORIG expresion           { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MENOR_IGUAL);}
     | expresion DIGUAL expresion            { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.DOBLE_IGUAL);}
     | expresion NIGUAL expresion            { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.NO_IGUAL);}
-    //FUNCIONES Y ATRIBUTOS
-    | ID PARIZQ listaParam PARDER           { $$ = AST_Tools.llamadaFuncion($1,$3);}
-    | ID PARIZQ PARDER                      { $$ = AST_Tools.llamadaFuncion($1,undefined);}
+    //FUNCIONES, ATRIBUTOS Y ARRAYS
+    | llamadaFuncion                        { $$ = $1}
     | atributos                             { $$ = $1}
-    //EXPRESION DE ASIGNACION DE ATRIBUTOS
+    | ID CORIZQ expresion CORDER            { $$ = AST_Tools.crearValor(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),Tipo_Valor.TYPE)} 
+;
+
+incremento_decremento 
+    : ID DECREMENTO     { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.DECREMENTO); }
+    | ID INCREMENTO     { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.INCREMENTO); }
 ;
 
 atributos
-    : atributos PUNTO ID       { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
-    | ID PUNTO ID                     { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
+    : atributos PUNTO ID                                                    { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
+    | ID PUNTO ID                                                           { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
+    | atributos PUNTO ID CORIZQ expresion CORDER                            { $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER PUNTO ID                                   { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER           { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$4,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+;
+
+llamadaFuncion
+    : ID PARIZQ listaParam PARDER           { $$ = AST_Tools.llamadaFuncion($1,$3);}
+    | ID PARIZQ PARDER                      { $$ = AST_Tools.llamadaFuncion($1,undefined);}
 ;
 
 /* SENTENCIAS DE CONTROL DE FLUJO */
