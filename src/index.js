@@ -47,7 +47,7 @@ function Editor(){
           lineNumbers: true,}
         }
       />
-     <h6 id="LCEditor">L:0 C:0</h6>
+     <h6 id="LCEditor">L:1 C:0</h6>
    </div>
 )}
 
@@ -66,7 +66,7 @@ function Viewer(){
           lineNumbers: true,}
         }
     />
-    <h6 id="LCViewer">L:0 C:0</h6>
+    <h6 id="LCViewer">L:1 C:0</h6>
   </div>
  )} 
 
@@ -136,8 +136,6 @@ function MainComponent(){
     
   );
 }
-
-
 
 
 ReactDOM.render(

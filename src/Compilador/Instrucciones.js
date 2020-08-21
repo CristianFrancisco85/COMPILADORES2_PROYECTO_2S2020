@@ -21,24 +21,28 @@ const Tipo_Operacion = {
     //Logica
 	AND:  			'AND',
 	OR: 			'OR',
-	NOT:   			'NOT'  	
+    NOT:   			'NOT',  	
+    //ATRIBUTOS
+    ATRIBUTO:       'ATRIBUTO'
 }
 // Tipos de Instrucciones
 const Tipo_Instruccion = {
-	DECLARACION:		'INS_DECLARACION',
+    DECLARACION_LET:    'INS_DECLARACION_LET',
+    DECLARACION_TYPE:   'INS_DECLARACION_TYPE',
+    DECLARACION_CONST:  'INS_DECLARACION_CONST',
 	ASIGNACION:			'INS_ASIGANCION',
     ASIG_DECL:      	'INS_ASIGNACION_DECLARACION',
 	DECL_FUNCION:   	'INS_DECLARACION_FUNCION',
-    LLAM_FUNCION:   	'INS_LLAMADA_FUNCION',
+    LLAMADA_FUNCION:   	'INS_LLAMADA_FUNCION',
     SALIDA:         	'INS_SALIDA_CONSOLA',
 	BLOQUE_IF:      	'INS_BLOQUE_IF',
 	BLOQUE_ELSE:      	'INS_BLOQUE_ELSE',
 	BLOQUE_ELSE_IF:     'INS_BLOQUE_ELSE_IF',
 	BLOQUE_SWITCH:  	'INS_BLOQUE_SWITCH',
 	CASO_SWITCH:  		'INS_CASO_SWITCH',
-	CASO_DEFAULT_SWITCH:'INS_CASO_DEFAULT_SWITCH',	
+	CASO_DEFAULT:       'INS_CASO_DEFAULT_SWITCH',	
     BLOQUE_WHILE:   	'INS_BLOQUE_WHILE',
-    BLOQUE_DOWHILE: 	'INS_BLOQUE_DOWHILE',
+    BLOQUE_DO_WHILE: 	'INS_BLOQUE_DOWHILE',
     BLOQUE_FOR:     	'INS_BLOQUE_FOR',
     BLOQUE_FOR_OF:     	'INS_BLOQUE_FOR_OF',
     BLOQUE_FOR_IN:     	'INS_BLOQUE_FOR_IN',
@@ -54,7 +58,8 @@ const Tipo_Valor = {
     BOOLEAN:        'BOOLEAN',
     STRING:         'STRING',
     VOID:           'VOID',
-    TYPE:           'TYPE'
+    TYPE:           'TYPE',
+    NULL:           'NULL'
 }
 
 let ErroresLexicos=[];
@@ -107,10 +112,33 @@ const AST_Tools = {
 	 * Crea Instrucción para una declaracion.
 	 * @param id 
 	 */
-	declaracion: function(id) {
+	declaracion_let: function(id) {
 		return {
-			Tipo: Tipo_Instruccion.DECLARACION,
+			Tipo: Tipo_Instruccion.DECLARACION_LET,
 			ID: id,
+		}
+    },
+
+    /**
+	 * Crea Instrucción para una declaracion.
+	 * @param id 
+	 */
+	declaracion_const: function(id) {
+		return {
+			Tipo: Tipo_Instruccion.DECLARACION_CONST,
+			ID: id,
+		}
+    },
+
+    /**
+	* Crea Instrucción para una declaracion.
+	* @param id 
+	*/
+    declaracion_type: function(id,atrrib) {
+		return {
+			Tipo: Tipo_Instruccion.DECLARACION_TYPE,
+            ID: id,
+            Attrib:atrrib
 		}
     },
 
@@ -143,15 +171,223 @@ const AST_Tools = {
 	 * Crea una lista de ids
 	 * @param Primer ID
 	 */
-	newIDList: function (id,tipo) {
+	newIDList: function (id,tipo,valor) {
         var ids = []; 
 		ids.push({
             ID:id,
-            Tipo:tipo
+            Tipo:tipo,
+            Valor:valor
         })
         return ids
 
+    },
+
+    /**
+	 * Crea un atributo
+	 * @param id 
+	 */
+	newAttrib: function (id,tipo) {
+		return{
+            ID:id,
+            Tipo:tipo,
+        }
+    },
+    
+    /**
+	 * Crea una lista de atributos
+	 * @param Primer ID
+	 */
+	newAttribList: function (id,tipo) {
+        var attribs = []; 
+		attribs.push({
+            ID:id,
+            Tipo:tipo
+        })
+        return attribs
+
+    },
+
+    /**
+	 * Crea un valor de type
+	 * @param id 
+	 */
+	newTypeVal: function (id,tipo) {
+		return{
+            ID:id,
+            Valor:tipo,
+        }
+    },
+    
+    /**
+	 * Crea una lista de valores de un type
+	 * @param Primer ID
+	 */
+	newTypeValList: function (id,tipo) {
+        var vals = []; 
+		vals.push({
+            ID:id,
+            Valor:tipo
+        })
+        return vals
+
+    },
+
+    /**
+	 * Crea un parametro
+	 * @param id 
+	 */
+	newParam: function (valor) {
+		return{
+            Valor:valor,
+        }
+    },
+    
+    /**
+	* Crea una lista de parametros
+	* @param Primer ID
+	*/
+	newParamList: function (valor) {
+        var params = []; 
+		params.push({
+            Valor:valor,
+        })
+        return params
+    },
+
+    /**
+	 * Crea una llamada de una funcion
+	 * @param id Identificador de la funcion
+	 */
+	llamadaFuncion: function (id,parametros){
+		return {
+			Tipo: Tipo_Instruccion.LLAMADA_FUNCION,
+			ID:id,
+			Params:parametros
+		}
+    },
+    
+    /*SENTENCIAS DE FLUJO*/
+
+    /**
+	* Crea un nuevo bloque IF
+	* @param expresionLogica Expresion Logica
+	* @param instrucciones Instrucciones del Bloque
+	*/
+	nuevoIf: function (expresionLogica,instrucciones){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_IF,
+			ExpresionLogica: expresionLogica,
+			InstruccionesIf: instrucciones,
+		}
 	},
+
+	/**
+	* Crea un nuevo bloque IF_ELSE
+	* @param expresionLogica Expresion Logica
+	* @param instrucciones Instrucciones del Bloque
+	*/
+	nuevoIfElse: function (expresionLogica,instrucciones,instruccionesELSE){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_IF,
+			ExpresionLogica: expresionLogica,
+			InstruccionesIf: instrucciones,
+			InstruccionesElse: instruccionesELSE
+		}
+    },
+
+    /**
+	 * Crea un nuevo bloque Switch
+	 * @param expresionnumerica Expresion numerica de Switch
+	 * @param casos Lista de casos 
+	*/
+	nuevoSwitch: function(expresion, casos) {
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_SWITCH,
+			Expresion: expresion,
+			Casos: casos
+		}
+	},
+
+	/**
+	 * Crea una lista de casos un Switch.
+	 * @param {*} caso 
+	 */
+	listaCasos: function (caso) {
+		var casos = []; 
+		casos.push(caso);
+		return casos;
+	},
+
+	/**
+	 * Crea un caso para un Switch.
+	 * @param {*} casoExpresion 
+	 * @param {*} instrucciones 
+	 */
+	nuevoCaso: function(casoExpresion, instrucciones) {
+		return {
+			Tipo: Tipo_Instruccion.CASO_SWITCH,
+			CasoExpresion: casoExpresion,
+			Instrucciones: instrucciones
+		}
+	},
+
+	/**
+	 * Crea un caso default un Switch.
+	 * @param {*} casoExpresion 
+	 * @param {*} instrucciones 
+	 */
+	nuevoCasoDefault: function(instrucciones) {
+		return {
+			Tipo: Tipo_Instruccion.CASO_DEFAULT,
+			Instrucciones: instrucciones
+		}
+	},
+    
+    /*SENTENCIAS DE REPETICION*/
+
+    /**
+	* Crea un nuevo bloque While
+	* @param expresionLogica Expresion Logica
+	* @param instrucciones Instrucciones del Bloque
+	*/
+	nuevoWhile: function (expresionLogica,instrucciones){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_WHILE,
+			ExpresionLogica: expresionLogica,
+			Instrucciones: instrucciones,
+		}
+	},
+
+	/**
+	* Crea un nuevo bloque While
+	* @param expresionLogica Expresion Logica
+	* @param instrucciones Instrucciones del Bloque
+	*/
+	nuevoDoWhile: function (expresionLogica,instrucciones){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_DO_WHILE,
+			ExpresionLogica: expresionLogica,
+			Instrucciones: instrucciones,
+		}
+    },
+    
+    /**
+	 * Crea un nuevo bloque For
+	 * @param operacionInicial Asignacion o Declaracion-Asignacion
+	 * @param expresionLogica Expresion Logica
+	 * @param expresionPaso Expresion que se ejecuta cada ciclo
+	 * @param instrucciones Instrucciones del Bloque
+	 */
+	nuevoFor: function (operacionInicial,expresionLogica,paso,instrucciones){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_FOR,
+			OperacionInicial:operacionInicial,
+			ExpresionLogica: expresionLogica,
+			ExpresionPaso:paso,
+			Instrucciones: instrucciones,
+		}
+	},
+    
 }
 
 const Translate_Tools ={

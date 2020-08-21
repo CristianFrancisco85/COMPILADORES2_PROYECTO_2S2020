@@ -18,6 +18,7 @@
 "type"                      return 'TYPE';
 "true"                      return 'TRUE'
 "false"                     return 'FALSE'
+"null"                      return 'NULL'
 
 "let"                       return 'LET';
 "const"                     return 'CONST';
@@ -98,6 +99,7 @@
 %left 'OPCIRCU'
 %right  'UMENOS' 'NOT'
 %nonassoc 'DECREMENTO' 'INCREMENTO'
+%left 'PUNTO'
 %nonassoc 'PARDER' 'PARIZQ'
 
 %start init
@@ -118,29 +120,27 @@ instrucciones
 ;
 
 instruccion
-    : declaracion                        {$$=$1}
-    | asignacion                         {$$=$1}
-    | error PUNTOYCOMA                   {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined }           
+    : asignacion                        {$$=$1}
+    | declaracion_asignacion            {$$=$1}
+    | bloqueIf                          {$$=$1}
+    | bloqueWhile                       {$$=$1}
+    | bloqueDoWhile                     {$$=$1}
+    | bloqueFor                         {$$=$1}
+    | bloqueSwitch                      {$$=$1}
+    | error PUNTOYCOMA                  {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined }           
 ;
 
-declaracion
-    : LET listaID PUNTOYCOMA    {$$=AST_Tools.declaracion($2)}
+/*DECLARACIONES, ASIGNACIONES Y EXPRESIONES*/
+
+declaracion_asignacion
+    : LET listaID PUNTOYCOMA                        {$$=AST_Tools.declaracion_let($2)}
+    | CONST listaID PUNTOYCOMA                      {$$=AST_Tools.declaracion_const($2)}
+    | TYPE ID IGUAL LLAVIZQ listaAttrib LLAVDER     {$$=AST_Tools.declaracion_type($2,$5)}
 ;
 
 asignacion
-    : ID IGUAL expresion PUNTOYCOMA        {$$=AST_Tools.asignacion($1,$3)}
-;  
-
-declaracion_asignacion
-    :
-;
-
-listaID
-    :listaID COMA ID DOSPUNTOS tipo     {$1.push(AST_Tools.newID($3,$5));}                        
-    |listaID COMA ID                    {$1.push(AST_Tools.newID($3,undefined));}                         
-    |ID DOSPUNTOS tipo                  {$$=AST_Tools.newIDList($1,$3)}   
-    |ID                                 {$$=AST_Tools.newIDList($1,undefined)}  
-    | 
+    : ID IGUAL expresion PUNTOYCOMA         {$$=AST_Tools.asignacion($1,$3)}
+    | atributos IGUAL expresion PUNTOYCOMA  {$$=AST_Tools.asignacion($1,$3)}
 ;
 
 tipo
@@ -149,6 +149,39 @@ tipo
     |BOOLEAN            {$$=Tipo_Valor.BOOLEAN}
     |VOID               {$$=Tipo_Valor.VOID}
     |ID                 {$$=$1}
+;
+
+listaID
+    //SIN VALOR
+    :listaID COMA ID DOSPUNTOS tipo     {$1.push(AST_Tools.newID($3,$5,undefined));}                        
+    |listaID COMA ID                    {$1.push(AST_Tools.newID($3,undefined,undefined));}                         
+    |ID DOSPUNTOS tipo                  {$$=AST_Tools.newIDList($1,$3,undefined)}   
+    |ID                                 {$$=AST_Tools.newIDList($1,undefined,undefined)}  
+    //CON VALOR
+    |listaID COMA ID DOSPUNTOS tipo IGUAL expresion     {$1.push(AST_Tools.newID($3,$5,$7));}                        
+    |listaID COMA ID IGUAL expresion                    {$1.push(AST_Tools.newID($3,undefined,$5));}                         
+    |ID DOSPUNTOS tipo IGUAL expresion                  {$$=AST_Tools.newIDList($1,$3,$5)}   
+    |ID IGUAL expresion                                 {$$=AST_Tools.newIDList($1,undefined,$3)} 
+    //CON VALOR DE TYPE
+    |listaID COMA ID DOSPUNTOS tipo IGUAL LLAVIZQ listaVal LLAVDER     {$1.push(AST_Tools.newID($3,$5,$8));}                        
+    |listaID COMA ID IGUAL LLAVIZQ listaVal LLAVDER                    {$1.push(AST_Tools.newID($3,undefined,$6));}                         
+    |ID DOSPUNTOS tipo IGUAL LLAVIZQ listaVal LLAVDER                  {$$=AST_Tools.newIDList($1,$3,$5)}   
+    |ID IGUAL LLAVIZQ listaVal LLAVDER                                 {$$=AST_Tools.newIDList($1,undefined,$4)} 
+;
+
+listaAttrib
+    : listaAttrib COMA ID DOSPUNTOS tipo    {$1.push(AST_Tools.newAttrib($3,$5))}
+    | ID DOSPUNTOS tipo                     {$$=AST_Tools.newAttribList($1,$3)}
+;
+
+listaVal
+    : listaVal COMA ID DOSPUNTOS expresion       {$1.push(AST_Tools.newTypeVal($3,$5))}
+    | ID DOSPUNTOS expresion                     {$$=AST_Tools.newTypeValList($1,$3)}
+;
+
+listaParam
+    : listaParam COMA expresion     {$1.push(AST_Tools.newParam($3))}
+    | expresion                     {$$=AST_Tools.newParamList($1)}
 ;
 
 expresion
@@ -172,8 +205,9 @@ expresion
     | expresion AND expresion               { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.AND);}
     | expresion OR expresion                { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.OR);}
     | NOT expresion                         { $$ = AST_Tools.operacionBinaria ($2,undefined,Tipo_Operacion.NOT);}
-    | TRUE                                  { $$ = AST_Tools.crearValor($1,Tipo_Valor.BOOLEANO);}
-    | FALSE                                 { $$ = AST_Tools.crearValor($1,Tipo_Valor.BOOLEANO);}
+    | TRUE                                  { $$ = AST_Tools.crearValor($1,Tipo_Valor.BOOLEAN);}
+    | FALSE                                 { $$ = AST_Tools.crearValor($1,Tipo_Valor.BOOLEAN);}
+    | NULL                                  { $$ = AST_Tools.crearValor($1,Tipo_Valor.NULL);}
     //RELACIONALES
     | expresion MAYOR expresion             { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MAYOR_QUE);}
     | expresion MENOR expresion             { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MENOR_QUE);}
@@ -182,8 +216,66 @@ expresion
     | expresion DIGUAL expresion            { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.DOBLE_IGUAL);}
     | expresion NIGUAL expresion            { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.NO_IGUAL);}
     //FUNCIONES Y ATRIBUTOS
-    //| ID PARIZQ lista_parametros PARDER     { $$ = AST_Tools.llamadaFuncion($1,$3);}
-    //| ID PARIZQ PARDER                      { $$ = AST_Tools.llamadaFuncion($1,undefined);}
-
+    | ID PARIZQ listaParam PARDER           { $$ = AST_Tools.llamadaFuncion($1,$3);}
+    | ID PARIZQ PARDER                      { $$ = AST_Tools.llamadaFuncion($1,undefined);}
+    | atributos                             { $$ = $1}
+    //EXPRESION DE ASIGNACION DE ATRIBUTOS
 ;
 
+atributos
+    : atributos PUNTO ID       { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
+    | ID PUNTO ID                     { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
+;
+
+/* SENTENCIAS DE CONTROL DE FLUJO */
+
+bloqueIf
+    : IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER              {$$= AST_Tools.nuevoIf($3,$6);}
+    | IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER bloqueElse   {$$= AST_Tools.nuevoIfElse($3,$6,$8)}
+    | IF PARIZQ expresion PARDER LLAVIZQ LLAVDER                            {$$= AST_Tools.nuevoIf($3,undefined);}
+    | IF PARIZQ expresion PARDER LLAVIZQ LLAVDER bloqueElse                 {$$= AST_Tools.nuevoIfElse($3,undefined,$7)}
+;
+
+bloqueElse
+    : ELSE LLAVIZQ instrucciones LLAVDER                                           {$$= $3}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER                {$$= AST_Tools.nuevoIf($4,$7);}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER bloqueElse     {$$= AST_Tools.nuevoIfElse($4,$7,$9)}
+    | ELSE LLAVIZQ  LLAVDER                                                        {$$= undefined}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER                              {$$= AST_Tools.nuevoIf($4,undefined);}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER bloqueElse                   {$$= AST_Tools.nuevoIfElse($4,undefined,$8)}
+;
+
+bloqueSwitch
+    : SWITCH PARIZQ expresion PARDER LLAVIZQ casos LLAVDER     {$$=AST_Tools.nuevoSwitch($3,$6);}
+;
+
+casos 
+    : casos caso    {$1.push($2);}
+    | caso          {$$=AST_Tools.listaCasos($1);}
+;
+
+caso 
+    : CASE expresion DOSPUNTOS LLAVIZQ instrucciones LLAVDER      {$$=AST_Tools.nuevoCaso($2,$5);}
+    | DEFAULT DOSPUNTOS LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoCasoDefault($4);}
+    | CASE expresion DOSPUNTOS LLAVIZQ LLAVDER                    {$$=AST_Tools.nuevoCaso($2,undefined);}
+    | DEFAULT DOSPUNTOS LLAVIZQ LLAVDER                           {$$=AST_Tools.nuevoCasoDefault(undefined);}
+;
+
+/* SENTENCIAS DE REPETICION */
+
+bloqueWhile
+    : WHILE PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER     {$$= AST_Tools.nuevoWhile($3,$6);}
+    | WHILE PARIZQ expresion PARDER LLAVIZQ  LLAVDER                  {$$= AST_Tools.nuevoWhile($3,undefined);}
+;
+
+bloqueDoWhile
+    : DO LLAVIZQ instrucciones LLAVDER WHILE PARIZQ expresion PARDER     {$$= AST_Tools.nuevoDoWhile($7,$3);}
+    | DO LLAVIZQ LLAVDER WHILE PARIZQ expresion PARDER                   {$$= AST_Tools.nuevoDoWhile($6,undefined);}
+;
+
+bloqueFor
+    :FOR PARIZQ asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ instrucciones LLAVDER                {$$=AST_Tools.nuevoFor($3,$4,$6,$9);}
+    |FOR PARIZQ declaracion_asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ instrucciones LLAVDER    {$$=AST_Tools.nuevoFor($3,$4,$6,$9);}
+    |FOR PARIZQ asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ LLAVDER                              {$$=AST_Tools.nuevoFor($3,$4,$6,undefined);}
+    |FOR PARIZQ declaracion_asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ LLAVDER                  {$$=AST_Tools.nuevoFor($3,$4,$6,undefined);}
+;

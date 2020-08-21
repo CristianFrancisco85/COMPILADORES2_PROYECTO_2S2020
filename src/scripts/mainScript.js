@@ -14,7 +14,7 @@ export function setCode(text){
 }
 
 export function setLC(editor,element){
-    element.innerHTML="L: "+editor.getCursor().line+" C: "+editor.getCursor().ch
+    element.innerHTML="L: "+Number(editor.getCursor().line+1)+" C: "+editor.getCursor().ch
 }
 
 export function setViewer(editor){
