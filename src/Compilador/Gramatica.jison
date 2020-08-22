@@ -123,22 +123,26 @@ instrucciones
 ;
 
 instruccion
-    : asignacion                        {$$=$1}
-    | declaracion_asignacion            {$$=$1}
-    | bloqueIf                          {$$=$1}
-    | bloqueWhile                       {$$=$1}
-    | bloqueDoWhile                     {$$=$1}
-    | bloqueFor                         {$$=$1}
-    | bloqueSwitch                      {$$=$1}
-    | atributos PUNTOYCOMA              {$$=$1}
-    | llamadaFuncion PUNTOYCOMA         {$$=$1}
-    | incremento_decremento PUNTOYCOMA  {$$=$1}
-    | error PUNTOYCOMA                  {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined }           
+    : asignacion                                            {$$=$1}
+    | declaracionAsignacion                                 {$$=$1}
+    | bloqueIf                                              {$$=$1}
+    | bloqueWhile                                           {$$=$1}
+    | bloqueDoWhile                                         {$$=$1}
+    | bloqueFor                                             {$$=$1}
+    | bloqueForOf                                           {$$=$1}
+    | bloqueForIn                                           {$$=$1}
+    | bloqueSwitch                                          {$$=$1}
+    | atributos PUNTOYCOMA                                  {$$=$1}
+    | llamadaFuncion PUNTOYCOMA                             {$$=$1}
+    | incremento_decremento PUNTOYCOMA                      {$$=$1}
+    | sentenciasTransferencia                               {$$=$1}
+    | CONSOLE PUNTO LOG PARIZQ expresion PARDER PUNTOYCOMA  {$$=AST_Tools.nuevaSalida($5)}
+    | error PUNTOYCOMA                                      {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined }           
 ;
 
 /*DECLARACIONES, ASIGNACIONES Y EXPRESIONES*/
 
-declaracion_asignacion
+declaracionAsignacion
     : LET listaID PUNTOYCOMA                                {$$=AST_Tools.declaracion_let($2)}
     | CONST listaID PUNTOYCOMA                              {$$=AST_Tools.declaracion_const($2)}
     | TYPE ID IGUAL LLAVIZQ listaAttrib LLAVDER             {$$=AST_Tools.declaracion_type($2,$5)}
@@ -289,6 +293,13 @@ llamadaFuncion
     | ID PARIZQ PARDER                      { $$ = AST_Tools.llamadaFuncion($1,undefined);}
 ;
 
+sentenciasTransferencia
+    : BREAK PUNTOYCOMA                  {$$=AST_Tools.nuevoBreak();}          
+    | CONTINUE PUNTOYCOMA               {$$=AST_Tools.nuevoContinue();}  
+    | RETURN PUNTOYCOMA                 {$$=AST_Tools.nuevoReturn(undefined);} 
+    | RETURN expresion PUNTOYCOMA       {$$=AST_Tools.nuevoReturn($2);} 
+;
+
 /* SENTENCIAS DE CONTROL DE FLUJO */
 
 bloqueIf
@@ -336,8 +347,24 @@ bloqueDoWhile
 ;
 
 bloqueFor
-    :FOR PARIZQ asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ instrucciones LLAVDER                {$$=AST_Tools.nuevoFor($3,$4,$6,$9);}
-    |FOR PARIZQ declaracion_asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ instrucciones LLAVDER    {$$=AST_Tools.nuevoFor($3,$4,$6,$9);}
-    |FOR PARIZQ asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ LLAVDER                              {$$=AST_Tools.nuevoFor($3,$4,$6,undefined);}
-    |FOR PARIZQ declaracion_asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ LLAVDER                  {$$=AST_Tools.nuevoFor($3,$4,$6,undefined);}
+    :FOR PARIZQ asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ instrucciones LLAVDER               {$$=AST_Tools.nuevoFor($3,$4,$6,$9);}
+    |FOR PARIZQ declaracionAsignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ instrucciones LLAVDER    {$$=AST_Tools.nuevoFor($3,$4,$6,$9);}
+    |FOR PARIZQ asignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ LLAVDER                             {$$=AST_Tools.nuevoFor($3,$4,$6,undefined);}
+    |FOR PARIZQ declaracionAsignacion expresion PUNTOYCOMA expresion PARDER LLAVIZQ LLAVDER                  {$$=AST_Tools.nuevoFor($3,$4,$6,undefined);}
+;
+
+bloqueForOf
+    : FOR PARIZQ declaracionAsignacionCiclos OF expresion PARDER LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevoForOf($3,$5);}
+    | FOR PARIZQ asignacion OF expresion PARDER LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoForOf($3,$5);}
+;
+
+bloqueForIn
+    : FOR PARIZQ declaracionAsignacionCiclos IN expresion PARDER LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevoForIn($3,$5);}
+    | FOR PARIZQ asignacion IN expresion PARDER LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoForIn($3,$5);}
+;
+
+//GRAMATICA PARA DECLARACIONES Y ASIGNACIONES DENTRO DE CICLOS
+declaracionAsignacionCiclos
+    : LET listaID                    {$$=AST_Tools.declaracion_let($2)}
+    | ID IGUAL expresion             {$$=AST_Tools.asignacion($1,$3)}
 ;

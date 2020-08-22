@@ -178,7 +178,6 @@ const AST_Tools = {
 		}
     },
     
-
     /**
 	 * Crea un id
 	 * @param id 
@@ -312,6 +311,16 @@ const AST_Tools = {
 			Params:parametros
 		}
     },
+
+	/**
+	 * Crea una instruccion break
+	 */
+	nuevaSalida: function (valor){
+		return {
+            Tipo: Tipo_Instruccion.SALIDA,
+            Valor:valor
+		}
+	},
     
     /*SENTENCIAS DE FLUJO*/
 
@@ -432,6 +441,63 @@ const AST_Tools = {
 			ExpresionLogica: expresionLogica,
 			ExpresionPaso:paso,
 			Instrucciones: instrucciones,
+		}
+    },
+
+    /**
+	 * Crea un nuevo bloque For-Of
+	 * @param param1 Variable auxiliar para iterar
+	 * @param param2 Variable sobre la cual se itera
+	 */
+	nuevoForOf: function (param1,param2,){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_FOR_OF,
+			AuxVar:param1,
+			Var: param2,
+		}
+    },
+
+    /**
+	 * Crea un nuevo bloque For-In
+	 * @param param1 Variable auxiliar para iterar
+	 * @param param2 Variable sobre la cual se itera
+	 */
+	nuevoForIn: function (param1,param2,){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_FOR_IN,
+			AuxVar:param1,
+			Var: param2,
+		}
+    },
+    
+    /*SENTENCIAS DE TRANSFERENCIA*/
+
+    /**
+	 * Crea una instruccion break
+	 */
+	nuevoBbreak: function (){
+		return {
+			tipo: Tipo_Instruccion.BREAK
+		}
+	},
+
+	/**
+	 * Crea una instruccion continue
+	 */
+	nuevoContinue: function (){
+		return {
+			tipo: Tipo_Instruccion.CONTINUE
+		}
+	},
+
+	/**
+	 * Crea una instruccion return
+	 * @param valor Puede ser una expresion o void
+	 */
+	nuevoReturn: function (valor){
+		return {
+			Tipo: Tipo_Instruccion.RETURN,
+			Valor: valor,
 		}
 	},
     
