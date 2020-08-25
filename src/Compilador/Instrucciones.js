@@ -29,27 +29,26 @@ const Tipo_Operacion = {
 }
 // Tipos de Instrucciones
 const Tipo_Instruccion = {
-    DECLARACION_LET:    'INS_DECLARACION_LET',
-    DECLARACION_TYPE:   'INS_DECLARACION_TYPE',
-    DECLARACION_CONST:  'INS_DECLARACION_CONST',
-    ASIGNACION:			'INS_ASIGANCION',
-    ASIGNACION_ARR:	    'INS_ASIGANCION_ARR',
-    ACCESO_ARR:	        'INS_ACCESO_ARR',
-    ASIG_DECL:      	'INS_ASIGNACION_DECLARACION',
+    DECLARACION_LET:    'INS_DECLARACION_LET', 
+    DECLARACION_TYPE:   'INS_DECLARACION_TYPE', 
+    DECLARACION_CONST:  'INS_DECLARACION_CONST', 
+    ASIGNACION:			'INS_ASIGANCION', 
+    ASIGNACION_ARR:	    'INS_ASIGANCION_ARR', 
+    ACCESO_ARR:	        'INS_ACCESO_ARR', 
+    GRAFICAR:           'INS_GRAFICAR', 
 	DECL_FUNCION:   	'INS_DECLARACION_FUNCION',
     LLAMADA_FUNCION:   	'INS_LLAMADA_FUNCION',
     SALIDA:         	'INS_SALIDA_CONSOLA',
 	BLOQUE_IF:      	'INS_BLOQUE_IF',
 	BLOQUE_ELSE:      	'INS_BLOQUE_ELSE',
-	BLOQUE_ELSE_IF:     'INS_BLOQUE_ELSE_IF',
 	BLOQUE_SWITCH:  	'INS_BLOQUE_SWITCH',
 	CASO_SWITCH:  		'INS_CASO_SWITCH',
 	CASO_DEFAULT:       'INS_CASO_DEFAULT_SWITCH',	
     BLOQUE_WHILE:   	'INS_BLOQUE_WHILE',
     BLOQUE_DO_WHILE: 	'INS_BLOQUE_DOWHILE',
     BLOQUE_FOR:     	'INS_BLOQUE_FOR',
-    BLOQUE_FOR_OF:     	'INS_BLOQUE_FOR_OF',
-    BLOQUE_FOR_IN:     	'INS_BLOQUE_FOR_IN',
+    BLOQUE_FOR_OF:     	'INS_BLOQUE_FOR_OF',//..
+    BLOQUE_FOR_IN:     	'INS_BLOQUE_FOR_IN',//..
     CONTINUE:       	'INS_CONTINUE',
     RETURN:         	'INS_RETURN',
     BREAK:          	'INS_BREAK'
@@ -320,6 +319,32 @@ const AST_Tools = {
             Tipo: Tipo_Instruccion.SALIDA,
             Valor:valor
 		}
+    },
+    
+    /**
+	 * Crea una instruccion graficarts;
+	 */
+	nuevoGraficar: function (){
+		return {
+            Tipo: Tipo_Instruccion.GRAFICAR,
+		}
+    },
+    
+    /**
+	 * Crea una funcion nueva
+	 * @param tipo Tipo de retorno de la funcion
+	 * @param id Identificador de la funcion
+	 * @param parametros Lista de parametros de la funcion
+	 * @param instrucciones Lista de instrucciones de la funcion
+	 */
+	nuevaFuncion: function (tipo,id,parametros,instrucciones){
+		return {
+			Tipo: Tipo_Instruccion.DECL_FUNCION,
+			Parametros: parametros,
+			ID: id,
+			Instrucciones : instrucciones,
+			TipoRetorno : tipo
+		}
 	},
     
     /*SENTENCIAS DE FLUJO*/
@@ -449,11 +474,12 @@ const AST_Tools = {
 	 * @param param1 Variable auxiliar para iterar
 	 * @param param2 Variable sobre la cual se itera
 	 */
-	nuevoForOf: function (param1,param2,){
+	nuevoForOf: function (param1,param2,instrucciones){
 		return {
 			Tipo: Tipo_Instruccion.BLOQUE_FOR_OF,
 			AuxVar:param1,
-			Var: param2,
+            Var: param2,
+            Instrucciones: instrucciones,
 		}
     },
 
@@ -462,11 +488,12 @@ const AST_Tools = {
 	 * @param param1 Variable auxiliar para iterar
 	 * @param param2 Variable sobre la cual se itera
 	 */
-	nuevoForIn: function (param1,param2,){
+	nuevoForIn: function (param1,param2,instrucciones){
 		return {
 			Tipo: Tipo_Instruccion.BLOQUE_FOR_IN,
 			AuxVar:param1,
-			Var: param2,
+            Var: param2,
+            Instrucciones: instrucciones,
 		}
     },
     
@@ -475,9 +502,9 @@ const AST_Tools = {
     /**
 	 * Crea una instruccion break
 	 */
-	nuevoBbreak: function (){
+	nuevoBreak: function (){
 		return {
-			tipo: Tipo_Instruccion.BREAK
+			Tipo: Tipo_Instruccion.BREAK
 		}
 	},
 
@@ -486,7 +513,7 @@ const AST_Tools = {
 	 */
 	nuevoContinue: function (){
 		return {
-			tipo: Tipo_Instruccion.CONTINUE
+			Tipo: Tipo_Instruccion.CONTINUE
 		}
 	},
 

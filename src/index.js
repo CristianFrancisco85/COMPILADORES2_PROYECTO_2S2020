@@ -20,12 +20,11 @@ import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 //Importaciones de funciones de JS
-import {print} from './scripts/mainScript.js'
 import {setCode} from './scripts/mainScript.js'
 import {setLC} from './scripts/mainScript.js'
 import {setViewer} from './scripts/mainScript.js'
 import {CodeTxt} from './scripts/mainScript.js'
-import {parse} from './scripts/mainScript.js'
+import {translate} from './scripts/mainScript.js'
 
 
 
@@ -88,7 +87,7 @@ function Viewer(){
 //Creacion de Botones
 function BtnTranslate(props){
   return(
-    <button className="btn btn-warning col-md-2 " onClick={print} >Traducir </button>
+    <button className="btn btn-warning col-md-2 " onClick={translate} >Traducir </button>
   )
 
 }
@@ -96,7 +95,7 @@ function BtnTranslate(props){
 function BtnRun(){
 
   return(
-    <button className="btn btn-success col-md-2 offset-md-1 " onClick={parse} >Ejecutar </button>
+    <button className="btn btn-success col-md-2 offset-md-1 " onClick={translate} >Ejecutar </button>
   )
 
 }
@@ -104,7 +103,7 @@ function BtnRun(){
 function BtnReports(){
 
   return(
-    <button className="btn btn-danger col-md-2 offset-md-1" onClick={print} >Reportes </button>
+    <button className="btn btn-danger col-md-2 offset-md-1" onClick={translate} >Reportes </button>
   )
 
 }

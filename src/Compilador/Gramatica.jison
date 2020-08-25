@@ -26,11 +26,11 @@
 "++"                        return 'INCREMENTO';
 "--"                        return 'DECREMENTO';
 "/"                         return 'OPDIV';
+"**"                        return 'OPCIRCU';
 "*"                         return 'OPMULTI';
 "%"                         return 'OPMOD';
 "-"                         return 'OPMENOS';
 "+"                         return 'OPMAS';
-"^"                         return 'OPCIRCU';
 
 "["                         return 'CORIZQ';
 "]"                         return 'CORDER';
@@ -42,8 +42,8 @@
 
 ">="                        return 'MAYORIG';
 "<="                        return 'MENORIG';
-">"                         return 'MENOR';
-"<"                         return 'MAYOR';
+"<"                         return 'MENOR';
+">"                         return 'MAYOR';
 "=="                        return 'DIGUAL';
 "="                         return 'IGUAL';
 "!="                        return 'NIGUAL';
@@ -118,8 +118,8 @@ inicio
 ;
 
 instrucciones
-	: instrucciones instruccion { $1.push($2); $$ = $1; }	
-	| instruccion				{ $$ = [$1]; }	
+	: instrucciones instruccion { $1.push($2);/*$1.push($2.F);$$.F=$1.F;*/$$ = $1; }	
+	| instruccion				{ $$ = [$1]; /*$$.F=[$1.F];*/}	
 ;
 
 instruccion
@@ -136,8 +136,10 @@ instruccion
     | llamadaFuncion PUNTOYCOMA                             {$$=$1}
     | incremento_decremento PUNTOYCOMA                      {$$=$1}
     | sentenciasTransferencia                               {$$=$1}
+    | declaracionFuncion                                    {$$.F=$1.F;console.log($1.F);console.log($1)}
+    | GRAFICAR PARIZQ PARDER PUNTOYCOMA                     {$$=AST_Tools.nuevoGraficar();}
     | CONSOLE PUNTO LOG PARIZQ expresion PARDER PUNTOYCOMA  {$$=AST_Tools.nuevaSalida($5)}
-    | error PUNTOYCOMA                                      {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined }           
+    | error PUNTOYCOMA                                      {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined; }           
 ;
 
 /*DECLARACIONES, ASIGNACIONES Y EXPRESIONES*/
@@ -180,16 +182,6 @@ listaID
     |listaID COMA ID IGUAL expresion                    {$1.push(AST_Tools.newID($3,undefined,$5));}                         
     |ID DOSPUNTOS tipo IGUAL expresion                  {$$=AST_Tools.newIDList($1,$3,$5)}   
     |ID IGUAL expresion                                 {$$=AST_Tools.newIDList($1,undefined,$3)} 
-    /*//CON VALOR DE ARRAY
-    |listaID COMA ID DOSPUNTOS tipo IGUAL CORIZQ listaArr CORDER    {$1.push(AST_Tools.newID($3,$5,$8));}                        
-    |listaID COMA ID IGUAL CORIZQ listaArr CORDER                   {$1.push(AST_Tools.newID($3,undefined,$6));}                         
-    |ID DOSPUNTOS tipo IGUAL CORIZQ listaArr CORDER                 {$$=AST_Tools.newIDList($1,$3,$6)}   
-    |ID IGUAL CORIZQ listaArr CORDER                                {$$=AST_Tools.newIDList($1,undefined,$4)} 
-    //CON VALOR DE TYPE
-    |listaID COMA ID DOSPUNTOS tipo IGUAL LLAVIZQ listaVal LLAVDER     {$1.push(AST_Tools.newID($3,$5,$8));}                        
-    |listaID COMA ID IGUAL LLAVIZQ listaVal LLAVDER                    {$1.push(AST_Tools.newID($3,undefined,$6));}                         
-    |ID DOSPUNTOS tipo IGUAL LLAVIZQ listaVal LLAVDER                  {$$=AST_Tools.newIDList($1,$3,$5)}   
-    |ID IGUAL LLAVIZQ listaVal LLAVDER                                 {$$=AST_Tools.newIDList($1,undefined,$4)} */
 ;
 
 listaArr
@@ -201,18 +193,7 @@ listaAttrib
     : listaAttrib COMA ID DOSPUNTOS tipo            {$1.push(AST_Tools.newAttrib($3,$5))}
     | listaAttrib PUNTOYCOMA ID DOSPUNTOS tipo      {$1.push(AST_Tools.newAttrib($3,$5))}
     | ID DOSPUNTOS tipo                             {$$=AST_Tools.newAttribList($1,$3)}
-    //: ID DOSPUNTOS tipo listaAttribPrima    {$$=$4;}
 ;
-
-/*
-LISTA ATTRIB PRIMA FUE UNA PRUEBA CON GRAMATICAS DESCENDENTES ACTUALMENTE NO ESTA EN USO
-SE APRENDIO A EL STACK :) 
-listaAttribPrima
-    : COMA ID DOSPUNTOS tipo listaAttribPrima {$5.push(AST_Tools.newAttrib($-2,$-0));$$=$5}
-    | {$$=AST_Tools.newAttribList($-2,$-0);}
-    | COMA {$$=AST_Tools.newAttribList($-2,$-0)}
-;
-*/
 
 listaVal
     : listaVal COMA ID DOSPUNTOS expresion       {$1.push(AST_Tools.newTypeVal($3,$5))}
@@ -261,7 +242,7 @@ expresion
     | LLAVIZQ listaVal LLAVDER              { $$ = $2}
     | LLAVIZQ listaVal COMA LLAVDER         { $$ = $2}
     | LLAVIZQ listaVal PUNTOYCOMA LLAVDER   { $$ = $2}
-    | ID CORIZQ expresion CORDER            { $$ = AST_Tools.crearValor(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),Tipo_Valor.TYPE)} 
+    | ID CORIZQ expresion CORDER            { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR)} 
 ;
 
 incremento_decremento 
@@ -300,6 +281,14 @@ sentenciasTransferencia
     | RETURN expresion PUNTOYCOMA       {$$=AST_Tools.nuevoReturn($2);} 
 ;
 
+/* GRAMATICAS DESCENDENTES :O */
+
+declaracionFuncion
+    : FUNCTION ID PARIZQ listaID PARDER LLAVIZQ instrucciones LLAVDER {$$=AST_Tools.nuevaFuncion(undefined,$2,$4,$7)} 
+;
+
+
+
 /* SENTENCIAS DE CONTROL DE FLUJO */
 
 bloqueIf
@@ -311,11 +300,11 @@ bloqueIf
 
 bloqueElse
     : ELSE LLAVIZQ instrucciones LLAVDER                                           {$$= $3}
-    | ELSE IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER                {$$= AST_Tools.nuevoIf($4,$7);}
-    | ELSE IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER bloqueElse     {$$= AST_Tools.nuevoIfElse($4,$7,$9)}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER                {$$= [AST_Tools.nuevoIf($4,$7)]}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ instrucciones LLAVDER bloqueElse     {$$= [AST_Tools.nuevoIfElse($4,$7,$9)]}
     | ELSE LLAVIZQ  LLAVDER                                                        {$$= undefined}
-    | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER                              {$$= AST_Tools.nuevoIf($4,undefined);}
-    | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER bloqueElse                   {$$= AST_Tools.nuevoIfElse($4,undefined,$8)}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER                              {$$= [AST_Tools.nuevoIf($4,undefined)]}
+    | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER bloqueElse                   {$$= [AST_Tools.nuevoIfElse($4,undefined,$8)]}
 ;
 
 bloqueSwitch
@@ -354,13 +343,13 @@ bloqueFor
 ;
 
 bloqueForOf
-    : FOR PARIZQ declaracionAsignacionCiclos OF expresion PARDER LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevoForOf($3,$5);}
-    | FOR PARIZQ asignacion OF expresion PARDER LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoForOf($3,$5);}
+    : FOR PARIZQ declaracionAsignacionCiclos OF expresion PARDER LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevoForOf($3,$5,$8);}
+    | FOR PARIZQ asignacion OF expresion PARDER LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoForOf($3,$5,$8);}
 ;
 
 bloqueForIn
-    : FOR PARIZQ declaracionAsignacionCiclos IN expresion PARDER LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevoForIn($3,$5);}
-    | FOR PARIZQ asignacion IN expresion PARDER LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoForIn($3,$5);}
+    : FOR PARIZQ declaracionAsignacionCiclos IN expresion PARDER LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevoForIn($3,$5,$8);}
+    | FOR PARIZQ asignacion IN expresion PARDER LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoForIn($3,$5,$8);}
 ;
 
 //GRAMATICA PARA DECLARACIONES Y ASIGNACIONES DENTRO DE CICLOS

@@ -1,9 +1,8 @@
-//Variable Globales
-
+import {TraducirBloque} from '../Compilador/Traductor.js';
 const parser = require('../Compilador/Gramatica.js');
 
 export let CodeTxt="";
-let Editor;
+let Viewer;
 
 export function print(text,event){
     alert("Codigo: \n"+CodeTxt);
@@ -18,22 +17,22 @@ export function setLC(editor,element){
 }
 
 export function setViewer(editor){
-   Editor=editor
+    Viewer=editor
 }
 
-export function parse(){
+export function translate(){
     let ast;
     try {
         // Se llama a parser
         ast = parser.parse(CodeTxt.toString());
         // Salida del AST en formato JSON
         console.log(JSON.stringify(ast,null,2));
-        //return JSON.stringify(ast,null,2);
+        console.log(TraducirBloque(ast.AST));
     } 
     catch (e) {
         console.error(e);
-        //return e;
     }
 }
+
 
 
