@@ -23,7 +23,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min';
 import {setCode} from './scripts/mainScript.js'
 import {setLC} from './scripts/mainScript.js'
 import {setViewer} from './scripts/mainScript.js'
-import {CodeTxt} from './scripts/mainScript.js'
+import {setConsole} from './scripts/mainScript.js'
 import {translate} from './scripts/mainScript.js'
 
 
@@ -55,9 +55,9 @@ function Viewer(){
  return (
     <div className="col-md-6 divcontent " >
       <h3>Salida</h3>
-      <CodeMirror 
-        autoFocus={true}  
+      <CodeMirror  
         onCursorActivity={(editor, data, value) => {setLC(editor,document.getElementById("LCViewer"))}}
+        editorDidMount ={ (editor) => setViewer(editor) }
         options={{
           theme: 'darcula',
           mode: 'javascript',
@@ -74,7 +74,8 @@ function Viewer(){
   return (
      <div className="col-md-12 divcontent">
       <h3>Consola</h3>
-     <CodeMirror autoFocus={true} 
+     <CodeMirror
+      editorDidMount ={ (editor) => setConsole(editor) }  
        options={{
          theme: 'lucario',
          lineNumbers: true,}

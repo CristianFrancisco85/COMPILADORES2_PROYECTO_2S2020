@@ -79,6 +79,7 @@
 
 \"(\\\"|[^\"])*\"			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
 \'(\\\"|[^\"])*\'			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
+\`(\\\"|[^\"])*\`			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
 [0-9]+("."[0-9]+)?\b        return 'NUMERO'
 ([a-zA-Z])[a-zA-Z0-9_]*	    return 'ID';
 <<EOF>>                     return 'EOF';
@@ -118,14 +119,15 @@ inicio
 ;
 
 instrucciones
-	: instrucciones instruccion { $1.push($2);/*$1.push($2.F);$$.F=$1.F;*/$$ = $1; }	
-	| instruccion				{ $$ = [$1]; /*$$.F=[$1.F];*/}	
+	: instrucciones instruccion { $1.push($2);$$ = $1; }	
+	| instruccion				{ $$ = [$1];}	
 ;
 
 instruccion
     : asignacion                                            {$$=$1}
     | declaracionAsignacion                                 {$$=$1}
     | bloqueIf                                              {$$=$1}
+    | bloqueTernario                                        {$$=$1}
     | bloqueWhile                                           {$$=$1}
     | bloqueDoWhile                                         {$$=$1}
     | bloqueFor                                             {$$=$1}
@@ -136,7 +138,7 @@ instruccion
     | llamadaFuncion PUNTOYCOMA                             {$$=$1}
     | incremento_decremento PUNTOYCOMA                      {$$=$1}
     | sentenciasTransferencia                               {$$=$1}
-    | declaracionFuncion                                    {$$.F=$1.F;console.log($1.F);console.log($1)}
+    | declaracionFuncion                                    {$$=$1}
     | GRAFICAR PARIZQ PARDER PUNTOYCOMA                     {$$=AST_Tools.nuevoGraficar();}
     | CONSOLE PUNTO LOG PARIZQ expresion PARDER PUNTOYCOMA  {$$=AST_Tools.nuevaSalida($5)}
     | error PUNTOYCOMA                                      {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined; }           
@@ -243,6 +245,7 @@ expresion
     | LLAVIZQ listaVal COMA LLAVDER         { $$ = $2}
     | LLAVIZQ listaVal PUNTOYCOMA LLAVDER   { $$ = $2}
     | ID CORIZQ expresion CORDER            { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR)} 
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ACCESO_ARR)} 
 ;
 
 incremento_decremento 
@@ -253,20 +256,28 @@ incremento_decremento
 atributos
     : atributos PUNTO ID                                                    { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
     | atributos PUNTO ID CORIZQ expresion CORDER                            { $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | atributos PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER    { $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
     | atributos PUNTO llamadaFuncion                                        { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
 
     | ID PUNTO ID                                                           { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
     | ID PUNTO ID CORIZQ expresion CORDER                                   { $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER           { $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
     | ID PUNTO llamadaFuncion                                               { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
 
     | ID CORIZQ expresion CORDER PUNTO ID                                   { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ATRIBUTO)}
     | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER           { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$4,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER    { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$4,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),$11,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
     | ID CORIZQ expresion CORDER PUNTO llamadaFuncion                       { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ATRIBUTO)}     
 
     | llamadaFuncion PUNTO ID                                               { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
     | llamadaFuncion PUNTO ID CORIZQ expresion CORDER                       { $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | llamadaFuncion PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER{ $$ = AST_Tools.operacionBinaria($1,AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($3,$5,Tipo_Operacion.ACCESO_ARR),$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
     | llamadaFuncion PUNTO llamadaFuncion                                   { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
 
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER PUNTO ID                                                           {$$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ACCESO_ARR),$9,Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER                                   {$$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria($9,$11,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER           {$$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($9,$11,Tipo_Operacion.ACCESO_ARR),$14,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER PUNTO llamadaFuncion                                               {$$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ACCESO_ARR),$9,Tipo_Operacion.ATRIBUTO)}
 ;
 
 llamadaFuncion
@@ -281,13 +292,14 @@ sentenciasTransferencia
     | RETURN expresion PUNTOYCOMA       {$$=AST_Tools.nuevoReturn($2);} 
 ;
 
-/* GRAMATICAS DESCENDENTES :O */
+/* GRAMATICA DESCENDENTE :O */
 
 declaracionFuncion
-    : FUNCTION ID PARIZQ listaID PARDER LLAVIZQ instrucciones LLAVDER {$$=AST_Tools.nuevaFuncion(undefined,$2,$4,$7)} 
+    : FUNCTION ID PARIZQ listaID PARDER DOSPUNTOS tipo LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevaFuncion($7,$2,$4,$9)} 
+    | FUNCTION ID PARIZQ  PARDER DOSPUNTOS tipo LLAVIZQ instrucciones LLAVDER         {$$=AST_Tools.nuevaFuncion($6,$2,undefined,$8)} 
+    | FUNCTION ID PARIZQ listaID PARDER DOSPUNTOS tipo LLAVIZQ  LLAVDER               {$$=AST_Tools.nuevaFuncion($7,$2,$4,undefined)}
+    | FUNCTION ID PARIZQ  PARDER DOSPUNTOS tipo LLAVIZQ  LLAVDER                      {$$=AST_Tools.nuevaFuncion($6,$2,undefined,undefined)}  
 ;
-
-
 
 /* SENTENCIAS DE CONTROL DE FLUJO */
 
@@ -305,6 +317,11 @@ bloqueElse
     | ELSE LLAVIZQ  LLAVDER                                                        {$$= undefined}
     | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER                              {$$= [AST_Tools.nuevoIf($4,undefined)]}
     | ELSE IF PARIZQ expresion PARDER LLAVIZQ LLAVDER bloqueElse                   {$$= [AST_Tools.nuevoIfElse($4,undefined,$8)]}
+;
+
+bloqueTernario
+    : expresion TERNARIO instrucciones DOSPUNTOS instrucciones PUNTOYCOMA {$$=AST_Tools.nuevoTernario($1,$3,$5)}
+    | expresion TERNARIO instrucciones PUNTOYCOMA                         {$$=AST_Tools.nuevoTernario($1,$2,undefined)}
 ;
 
 bloqueSwitch

@@ -1,14 +1,50 @@
 import { Tipo_Instruccion } from './Instrucciones.js';
 
+const _ = require('lodash')
 const Tipo_Operacion	= require('./Instrucciones.js').Tipo_Operacion;
 const Tipo_Valor 	    = require('./Instrucciones.js').Tipo_Valor;
 
-export function TraducirBloque(Instrucciones,PuntoComa){
+//AST modificado que se regresara si hay funciones anidadas
+let AST;
+//Booleano que nos dice si hay funciones anidadas
+let BanderaFun
+//Arreglo de funciones desanidadas
+let Funciones
+
+export function Traducir (Instrucciones){
+    BanderaFun=false
+    Funciones=[]
+    AST=Instrucciones;
+    let Code=TraducirBloque(AST)
+    if(BanderaFun){
+        Funciones.forEach(element => {
+            if(element.length!==0){
+                element.forEach(element2 => {
+                    AST.push(element2)
+                });
+            }
+        });
+        console.log(AST)
+    }
+    Funciones=[]
+    BanderaFun=false
+    return Code
+}
+
+export function ReturnAST(){
+    return AST
+}
+
+function TraducirBloque(Instrucciones,PuntoComa){
     //Cadena que guarda el codigo traducido
     let Code="";
+
     Instrucciones.forEach(instruccion => {
-        
-        if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
+
+        if(instruccion===undefined){
+            console.error ("Intruccion Invalida")
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
             if(PuntoComa!==undefined){
                 Code+=LetDecToString(instruccion);
             }
@@ -42,6 +78,9 @@ export function TraducirBloque(Instrucciones,PuntoComa){
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_IF){
             Code+=IfToString(instruccion)+"\n";
         }
+        else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_TERNARIO){
+            Code+=TernarioToString(instruccion)+"\n";
+        }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_WHILE){
             Code+=WhileToString(instruccion)+"\n";
         }
@@ -59,6 +98,9 @@ export function TraducirBloque(Instrucciones,PuntoComa){
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_SWITCH){
             Code+=SwitchToString(instruccion)+"\n";
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION){
+            Code+=FunToString(instruccion);
         }
         //----
         else if(instruccion.Tipo===Tipo_Instruccion.GRAFICAR){
@@ -80,7 +122,7 @@ export function TraducirBloque(Instrucciones,PuntoComa){
         }
         
     });
-    
+
     return Code;
 }
 
@@ -170,7 +212,11 @@ function AsigArrToString(instruccion){
  */
 function CallFunToString(instruccion){
     let TempTxt=""
-    TempTxt+=instruccion.ID+traducirParams(instruccion.Params)
+    TempTxt+=instruccion.ID+"("
+    if(instruccion.Params!==undefined){
+        TempTxt+=traducirParams(instruccion.Params)
+    }
+    TempTxt+=")"
     return TempTxt;
 }
 
@@ -186,6 +232,21 @@ function IfToString(instruccion){
     TempTxt+="}\nelse{\n"
     if(instruccion.InstruccionesElse!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesElse)}
     TempTxt+="}"
+    return TempTxt
+}
+
+/**
+ * Traduce un bloque Ternario
+ * @param {*} instruccion 
+ */
+function TernarioToString(instruccion){   
+    let TempTxt=""
+    
+    TempTxt+=traducirValor(instruccion.ExpresionLogica)+"?"
+    if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf,false)}
+    TempTxt+=":"
+    if(instruccion.InstruccionesElse!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesElse,false)}
+    TempTxt+=";"
     return TempTxt
 }
 
@@ -265,6 +326,49 @@ function SwitchToString(instruccion){
     return TempTxt
 }
 
+/**
+ * Se traduce una funcion y se realiza desanidado de funciones
+ * @param {*} instruccion 
+ */
+function FunToString(instruccion){
+    let TempTxt="";
+    let TempFunciones=[]
+    //Se extraen funciones anidadas
+    TempFunciones=_.filter(instruccion.Instrucciones,function(ins) {
+        return ins.Tipo===Tipo_Instruccion.DECL_FUNCION;
+    });
+    Funciones.push(TempFunciones)
+    //Luego se eliminan
+    _.remove(instruccion.Instrucciones,function(ins) {
+        return ins.Tipo===Tipo_Instruccion.DECL_FUNCION;
+    });
+    //Se traduce funcion sin funciones anidadas
+    TempTxt+="function "+instruccion.ID+"("
+    if(instruccion.Parametros!=undefined){
+        instruccion.Parametros.forEach((element, index, arr) => {
+            TempTxt+= element.ID;
+            if(element.Tipo===undefined){}else{TempTxt+=":"+traducirTipo(element.Tipo);}
+            if(arr[index+1]===undefined){}else{TempTxt+=","}
+        });
+    }   
+    TempTxt+="):"+traducirTipo(instruccion.TipoRetorno)+"{\n"
+    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones)}
+    TempTxt+="}\n"
+
+    /*Para cada funcion anidada se establece un atributo heredado 
+    para funcion padre luego se traduce*/
+    if(TempFunciones.length!==0){
+        BanderaFun=true;
+        TempFunciones.forEach(element => {
+            element.Padre=instruccion.ID
+            element.ID=instruccion.ID+"_"+element.ID
+            TempTxt+=FunToString(element)
+        });
+    }   
+
+    return TempTxt;
+
+}
 
 //FUNCIONES COMPLEMENTARIAS
 
@@ -424,12 +528,11 @@ function traducirAttrib(array){
  * @param {*} array 
  */
 function traducirParams(array){
-    let TempTxt="(";
+    let TempTxt="";
     array.forEach((element, index, arr) => {
         TempTxt+=traducirValor(element.Valor);
         if(arr[index+1]===undefined){}else{TempTxt+=","}
     });
-    TempTxt+=")"
     return TempTxt;
 }
 

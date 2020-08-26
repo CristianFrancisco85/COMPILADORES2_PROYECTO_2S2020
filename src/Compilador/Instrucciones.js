@@ -40,15 +40,16 @@ const Tipo_Instruccion = {
     LLAMADA_FUNCION:   	'INS_LLAMADA_FUNCION',
     SALIDA:         	'INS_SALIDA_CONSOLA',
 	BLOQUE_IF:      	'INS_BLOQUE_IF',
-	BLOQUE_ELSE:      	'INS_BLOQUE_ELSE',
+    BLOQUE_ELSE:      	'INS_BLOQUE_ELSE',
+    BLOQUE_TERNARIO:    'INS_BLOQUE_TERNARIO',
 	BLOQUE_SWITCH:  	'INS_BLOQUE_SWITCH',
 	CASO_SWITCH:  		'INS_CASO_SWITCH',
 	CASO_DEFAULT:       'INS_CASO_DEFAULT_SWITCH',	
     BLOQUE_WHILE:   	'INS_BLOQUE_WHILE',
     BLOQUE_DO_WHILE: 	'INS_BLOQUE_DOWHILE',
     BLOQUE_FOR:     	'INS_BLOQUE_FOR',
-    BLOQUE_FOR_OF:     	'INS_BLOQUE_FOR_OF',//..
-    BLOQUE_FOR_IN:     	'INS_BLOQUE_FOR_IN',//..
+    BLOQUE_FOR_OF:     	'INS_BLOQUE_FOR_OF',
+    BLOQUE_FOR_IN:     	'INS_BLOQUE_FOR_IN',
     CONTINUE:       	'INS_CONTINUE',
     RETURN:         	'INS_RETURN',
     BREAK:          	'INS_BREAK'
@@ -72,8 +73,6 @@ const Tipo_Valor = {
 
 let ErroresLexicos=[];
 let ErroresSintacticos=[];
-let ErroresSemanticos=[];
-let Traduccion="";
 
 
 const AST_Tools = {
@@ -360,8 +359,8 @@ const AST_Tools = {
 			ExpresionLogica: expresionLogica,
 			InstruccionesIf: instrucciones,
 		}
-	},
-
+    },
+    
 	/**
 	* Crea un nuevo bloque IF_ELSE
 	* @param expresionLogica Expresion Logica
@@ -375,6 +374,22 @@ const AST_Tools = {
 			InstruccionesElse: instruccionesELSE
 		}
     },
+
+    /**
+	* Crea un nuevo bloque Ternario
+	* @param expresionLogica Expresion Logica
+    * @param instrucciones Instrucciones de If
+    * @param instruccionesELSE Intrucciones de Else
+	*/
+	nuevoTernario: function (expresionLogica,instrucciones,instruccionesELSE){
+		return {
+			Tipo: Tipo_Instruccion.BLOQUE_TERNARIO,
+			ExpresionLogica: expresionLogica,
+            InstruccionesIf: instrucciones,
+            InstruccionesElse: instruccionesELSE,
+		}
+	},
+
 
     /**
 	 * Crea un nuevo bloque Switch
@@ -530,10 +545,6 @@ const AST_Tools = {
     
 }
 
-const Translate_Tools ={
-
-}
-
 
 const Manejo_Errores = {
 
@@ -568,7 +579,6 @@ const Manejo_Errores = {
     resetErrors:function(){
 		ErroresSintacticos=[];
         ErroresLexicos=[];
-        ErroresSemanticos=[];
 	}
 
 }
