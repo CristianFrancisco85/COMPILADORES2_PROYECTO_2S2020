@@ -171,6 +171,11 @@ tipo
     |BOOLEAN CORIZQ CORDER          {$$=Tipo_Valor.BOOLEAN_ARR}
     |VOID CORIZQ CORDER             {$$=Tipo_Valor.VOID_ARR}
     |ID CORIZQ CORDER               {$$=($1+"_ARR")}
+    |STRING CORIZQ CORDER CORIZQ CORDER          {$$=Tipo_Valor.STRING_ARR_ARR}
+    |NUMBER CORIZQ CORDER CORIZQ CORDER          {$$=Tipo_Valor.NUMBER_ARR_ARR}
+    |BOOLEAN CORIZQ CORDER CORIZQ CORDER         {$$=Tipo_Valor.BOOLEAN_ARR_ARR}
+    |VOID CORIZQ CORDER CORIZQ CORDER            {$$=Tipo_Valor.VOID_ARR_ARR}
+    |ID CORIZQ CORDER CORIZQ CORDER              {$$=($1+"_ARR_ARR")}
 ;
 
 listaID
@@ -227,9 +232,9 @@ expresion
     | expresion AND expresion               { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.AND);}
     | expresion OR expresion                { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.OR);}
     | NOT expresion                         { $$ = AST_Tools.operacionBinaria ($2,undefined,Tipo_Operacion.NOT);}
-    | TRUE                                  { $$ = AST_Tools.crearValor($1,Tipo_Valor.BOOLEAN);}
-    | FALSE                                 { $$ = AST_Tools.crearValor($1,Tipo_Valor.BOOLEAN);}
-    | NULL                                  { $$ = AST_Tools.crearValor($1,Tipo_Valor.NULL);}
+    | TRUE                                  { $$ = AST_Tools.crearValor(true,Tipo_Valor.BOOLEAN);}
+    | FALSE                                 { $$ = AST_Tools.crearValor(false,Tipo_Valor.BOOLEAN);}
+    | NULL                                  { $$ = AST_Tools.crearValor(null,Tipo_Valor.NULL);}
     //RELACIONALES
     | expresion MAYOR expresion             { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MAYOR_QUE);}
     | expresion MENOR expresion             { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MENOR_QUE);}

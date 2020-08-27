@@ -63,11 +63,13 @@ const Tipo_Valor = {
     STRING:         'STRING',
     VOID:           'VOID',
     NUMBER_ARR:     'NUMBER_ARR',
-    ID_ARR:         'ID_ARR',
     BOOLEAN_ARR:    'BOOLEAN_ARR',
     STRING_ARR:     'STRING_ARR',
     VOID_ARR:       'VOID_ARR',
-    TYPE_ARR:       'TYPE_ARR',
+	NUMBER_ARR_ARR: 'NUMBER_ARR_ARR',
+    BOOLEAN_ARR_ARR:'BOOLEAN_ARR_ARR',
+    STRING_ARR_ARR: 'STRING_ARR_ARR',
+    VOID_ARR_ARR:   'VOID_ARR_ARR',
     NULL:           'NULL'
 }
 

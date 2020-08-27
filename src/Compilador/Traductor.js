@@ -1,8 +1,10 @@
 import { Tipo_Instruccion } from './Instrucciones.js';
+import { Tipo_Operacion } from './Instrucciones.js';
+import { Tipo_Valor } from './Instrucciones.js';
+
 
 const _ = require('lodash')
-const Tipo_Operacion	= require('./Instrucciones.js').Tipo_Operacion;
-const Tipo_Valor 	    = require('./Instrucciones.js').Tipo_Valor;
+
 
 //AST modificado que se regresara si hay funciones anidadas
 let AST;
@@ -344,7 +346,7 @@ function FunToString(instruccion){
     });
     //Se traduce funcion sin funciones anidadas
     TempTxt+="function "+instruccion.ID+"("
-    if(instruccion.Parametros!=undefined){
+    if(instruccion.Parametros!==undefined){
         instruccion.Parametros.forEach((element, index, arr) => {
             TempTxt+= element.ID;
             if(element.Tipo===undefined){}else{TempTxt+=":"+traducirTipo(element.Tipo);}
@@ -390,11 +392,22 @@ function traducirTipo(tipo){
             return "string[]";
         case Tipo_Valor.VOID_ARR:
             return "void[]";
+        case Tipo_Valor.NUMBER_ARR_ARR:
+            return "number[][]";
+        case Tipo_Valor.BOOLEAN_ARR_ARR:
+            return "boolean[][]";
+        case Tipo_Valor.STRING_ARR_ARR:
+            return "string[][]";
+        case Tipo_Valor.VOID_ARR_ARR:
+            return "void[][]";
         case Tipo_Valor.NULL:
             return "null";
         default:
             if(tipo.substring(tipo.length-4,tipo.length)==="_ARR"){
                 return tipo.substring(0,tipo.length-4)+"[]"
+            }
+            else if(tipo.substring(tipo.length-8,tipo.length)==="_ARR_ARR"){
+                return tipo.substring(0,tipo.length-8)+"[][]"
             }
             else{
                 return tipo

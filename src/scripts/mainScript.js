@@ -1,10 +1,11 @@
-import {Traducir, ReturAST} from '../Compilador/Traductor.js';
-import {ReturnAST} from '../Compilador/Traductor.js';
+import {Traducir, ReturnAST} from '../Compilador/Traductor.js';
+import {Ejecutar} from '../Compilador/Interprete.js'
 const parser = require('../Compilador/Gramatica.js');
 
-export let CodeTxt="2";
-let Viewer,Console
+export let CodeTxt="",TraduccionTxt="";
+export let Viewer,Console
 let AST
+
 
 export function setCode(text){
     CodeTxt=text
@@ -19,14 +20,14 @@ export function setViewer(editor){
 export function setConsole(editor){
     Console=editor
 }
-
 export function translate(){
     try {
         AST = parser.parse(CodeTxt.toString());
         console.log(JSON.stringify(AST,null,2));
-        console.log(Traducir(AST.AST));
-        Viewer.setValue(CodeTxt)
+        TraduccionTxt=Traducir(AST.AST);
+        Viewer.setValue(TraduccionTxt)
         AST.AST=ReturnAST();
+        Ejecutar(AST.AST)
         console.log(JSON.stringify(AST,null,2));
     } 
     catch (e) {
