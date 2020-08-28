@@ -40,7 +40,16 @@ class TablaSimbolos {
      * @param tipo2 Let o Const
      */
     nuevoSimbolo(id,tipo,valor,tipo2) {
-        this.simbolos.push(crearSimbolo(id,tipo,valor,tipo2));
+        let simbolo = _.filter(this.simbolos,function(simb) {
+            return simb.ID===id;
+        });
+        if(simbolo.length===0){
+            this.simbolos.push(crearSimbolo(id,tipo,valor,tipo2));
+        }
+        else{
+            throw Error("No se puede declarar variable con ID: "+id+", por que ya existe")
+        }
+        
     }
 
     /**
@@ -78,7 +87,7 @@ class TablaSimbolos {
         let simbolo = _.filter(this.simbolos,function(simb) {
             return simb.ID===id;
         });
-
+        simbolo=simbolo[0]
         if (simbolo){
             return simbolo
         }
@@ -117,7 +126,7 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE){
-            
+            TypeDecExecute(instruccion,TablaSimbolos);
         }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION){
             
@@ -176,7 +185,7 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
 
     }
     catch(e){
-        console.error(e.message)
+        console.error(e)
     }
         
     });
@@ -202,6 +211,11 @@ function LetDecExecute(instruccion,ts){
     
 }
 
+function TypeDecExecute(instruccion,ts){
+    //Se declara Type
+    ts.nuevoSimbolo(instruccion.ID,undefined,instruccion.Attrib,"TYPE")
+}
+
 
 //FUNCIONES COMPLEMENTARIAS 
 
@@ -212,13 +226,30 @@ function LetDecExecute(instruccion,ts){
  */
 function ejecutarValor(valor,ts){
     
-    //Si no hay operandos
-    if(valor.Valor!==undefined){      
+    //Si es un arreglo
+    if(Array.isArray(valor)){
+        //Si es un arreglo de un type
+        if(valor[0].ID!==undefined){
+            //Se crea objeto
+            return crearObjeto(valor,ts)
+        }
+        else{
+            //Se crea array
+            return crearArray(valor,ts)
+        }
+        
+    }
+    //Si no hay operandos y no es un ID
+    else if(valor.Valor!==undefined&&valor.Tipo!==Tipo_Valor.ID){      
         return valor
     }
-    //Si es un arreglo
-    else if(Array.isArray(valor.Valor)){
-        //FALTA
+    //Si no hay operandos y es un ID
+    else if(valor.Valor!==undefined&&valor.Tipo===Tipo_Valor.ID){      
+        return ts.getValor(valor.Valor)
+    }
+    //Si es un id para operacion de atributo o acceso array
+    else if(valor.Tipo===undefined&&valor.OpTipo===undefined){
+        return ts.getValor(valor).Valor
     }
     //Si es llamada de una funcion
     else if(valor.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
@@ -234,8 +265,6 @@ function ejecutarValor(valor,ts){
 
 }
 
-
-
 /**
  * Se ejecuta una operacion binaria
  * @param {*} valor Expresion a traducir
@@ -243,9 +272,9 @@ function ejecutarValor(valor,ts){
 function ejecutarOperacionBinaria(valor,ts){
     let OpIzq,OpDer
 
-    OpIzq=ejecutarValor(valor.OpIzq);
+    OpIzq=ejecutarValor(valor.OpIzq,ts);
     if(valor.OpDer!==undefined){
-    OpDer=ejecutarValor(valor.OpDer)
+    OpDer=ejecutarValor(valor.OpDer,ts)
     }
     
     switch(valor.OpTipo){
@@ -255,119 +284,128 @@ function ejecutarOperacionBinaria(valor,ts){
                 return {Valor:-1*Number(OpIzq.Valor),Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con -1")
+                throw new Error("No se puede hacer negativo un valot tipo "+OpIzq.Tipo)
             }
         case Tipo_Operacion.MULTIPLICACION:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)*Number(OpDer.Valor),Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con *")
+                throw new Error("No se puede multiplicar "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.DIVISION:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)/Number(OpDer.Valor),Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con /")
+                throw new Error("No se puede dividir "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.SUMA:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)+Number(OpDer.Valor),Tipo:Tipo_Valor.NUMBER}
             }
+            if(OpIzq.Tipo===Tipo_Valor.STRING && OpDer.Tipo===Tipo_Valor.NUMBER){
+                return {Valor:OpIzq.Valor+Number(OpDer.Valor).toString(),Tipo:Tipo_Valor.STRING}
+            }
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.STRING){
+                return {Valor:Number(OpIzq.Valor).toString()+OpDer.Valor,Tipo:Tipo_Valor.STRING}
+            }
+            if(OpIzq.Tipo===Tipo_Valor.STRING && OpDer.Tipo===Tipo_Valor.STRING){
+                return {Valor:OpIzq.Valor+OpDer.Valor,Tipo:Tipo_Valor.STRING}
+            }
             else{
-                throw new Error("Error con +")
+                throw new Error("No se puede sumar "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.RESTA:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)-Number(OpDer.Valor),Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con -")
+                throw new Error("No se puede restar "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.MODULO:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)%Number(OpDer.Valor),Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con %")
+                throw new Error("No se puede hacer modulo "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.POTENCIA:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)**Number(OpDer.Valor),Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con **")
+                throw new Error("No se puede elevar "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.DECREMENTO:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)-1,Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con --")
+                throw new Error("No se puede decrementar "+OpIzq.Tipo)
             }
         case Tipo_Operacion.INCREMENTO:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)+1,Tipo:Tipo_Valor.NUMBER}
             }
             else{
-                throw new Error("Error con ++")
+                throw new Error("No se puede incrementar "+OpIzq.Tipo)
             }
         case Tipo_Operacion.MAYOR_QUE:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)>Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con >")
+                throw new Error("No se puede > "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.MENOR_QUE:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)<Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con <")
+                throw new Error("No se puede < "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.MAYOR_IGUAL:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)>=Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con >=")
+                throw new Error("No se puede >= "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.MENOR_IGUAL:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)<=Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con <=")
+                throw new Error("No se puede <= "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.DOBLE_IGUAL:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)===Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con ==")
+                throw new Error("No se puede == "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.NO_IGUAL:
-            if(OpIzq.Tipo===Tipo_Valor.NUMBER||OpDer.Tipo===Tipo_Valor.NUMBER){
+            if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)!==Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con !=")
+                throw new Error("No se puede != "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.AND:
-            if(OpIzq.Tipo===Tipo_Valor.BOOLEAN||OpDer.Tipo===Tipo_Valor.BOOLEAN){
+            if(OpIzq.Tipo===Tipo_Valor.BOOLEAN && OpDer.Tipo===Tipo_Valor.BOOLEAN){
                 return {Valor:OpIzq.Valor && OpDer.Valor ,Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con &&")
+                throw new Error("No se puede && "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.OR:
-            if(OpIzq.Tipo===Tipo_Valor.BOOLEAN||OpDer.Tipo===Tipo_Valor.BOOLEAN){
+            if(OpIzq.Tipo===Tipo_Valor.BOOLEAN && OpDer.Tipo===Tipo_Valor.BOOLEAN){
                 return {Valor:OpIzq.Valor || OpDer.Valor ,Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("Error con ==")
+                throw new Error("No se puede || "+OpIzq.Tipo+" con "+OpDer.Tipo)
             }
         case Tipo_Operacion.NOT:
             if(OpIzq.Tipo===Tipo_Valor.BOOLEAN){
@@ -377,10 +415,107 @@ function ejecutarOperacionBinaria(valor,ts){
                 throw new Error("Error con !")
             }
         case Tipo_Operacion.ATRIBUTO:
-            return ejecutarValor(valor.OpIzq)+"."+ejecutarValor(valor.OpDer)
+            //AQUI ME QUEDE
+            if(Array.isArray(OpIzq.Valor)){
+                if(OpDer.Tipo===Tipo_Valor.NUMBER){
+                    return OpIzq.Valor[Number(OpDer.Valor)]
+                }
+                else{
+                    throw Error("No se puede a array sin expresion numerica");
+                }
+            }
+            else{
+                throw Error("No se puede a array porque no existe");
+            }
         case Tipo_Operacion.ACCESO_ARR:
-            return ejecutarValor(ejecutarValor(valor.OpIzq)[ejecutarValor(valor.OpDer)])
+            if(Array.isArray(OpIzq)){
+                if(OpDer.Tipo===Tipo_Valor.NUMBER){
+                    return OpIzq[Number(OpDer.Valor)]
+                }
+                else{
+                    throw Error("No se puede a array sin expresion numerica");
+                }
+            }
+            else if(Array.isArray(OpIzq.Valor)){
+                if(OpDer.Tipo===Tipo_Valor.NUMBER){
+                    return OpIzq.Valor[Number(OpDer.Valor)]
+                }
+                else{
+                    throw Error("No se puede a array sin expresion numerica");
+                }
+            }
+            else{
+                throw Error("No se puede a array porque no existe");
+            }
         default:
+    }
+
+}
+
+/**
+ * Crea un array a partir de la lista del arbol sintactico
+ * @returns Objeto {Valor:[...],Tipo: *_ARR}
+ * @param {*} valor 
+ * @param {*} ts 
+ */
+function crearArray(valor,ts){
+    let Temp={},aux
+    Temp.Valor =[]
+    
+    //El tipo sera del tipo de primer elemento
+    Temp.Tipo = ejecutarValor(valor[0].Valor,ts).Tipo
+
+    valor.forEach((element, index, arr) => {
+        aux=ejecutarValor(element.Valor,ts)
+        if(aux.Tipo===Temp.Tipo){
+            Temp.Valor.push(aux)
+        }
+        else{
+            throw Error("Array tipo "+Temp.Tipo+" no puede almacenar "+aux.Tipo)
+        }
+        
+    });
+
+    Temp.Tipo+="_ARR"
+
+    return Temp
+
+}
+
+/**
+ * Crea un objeto definido por la lista de atributos
+ * @returns Objeto {attrib1:...,attrib2: ...,....}
+ * @param {*} valor 
+ * @param {*} ts 
+ */
+function crearObjeto(valor,ts){
+    //Objeto temporal
+    let Temp={}
+
+    //Arreglo de todos los types
+    let typesArr=_.filter(ts.getsimbolos(),function(simb) {
+        return simb.Tipo2==="TYPE";
+    });
+
+    //Arreglo auxiliar para comparar con types
+    let auxArr=[]
+
+    valor.forEach((element, index, arr) => {
+        auxArr.push({ID:element.ID,Tipo:ejecutarValor(element.Valor,ts).Tipo})
+        Temp[element.ID]=ejecutarValor(element.Valor,ts)
+    });
+
+    typesArr.forEach((element, index, arr) => {       
+        if(_(element.Valor).differenceWith(auxArr, _.isEqual).isEmpty()){
+            Temp = {Valor:Temp,Tipo:element.ID}
+        }
+    });
+
+    if(Temp.Tipo!==undefined){
+        return Temp
+    }
+    else{
+        throw Error("El type que se desea declarar no existe")
     }
 
 }

@@ -43,8 +43,10 @@ function TraducirBloque(Instrucciones,PuntoComa){
 
     Instrucciones.forEach(instruccion => {
 
+    try{
+
         if(instruccion===undefined){
-            console.error ("Intruccion Invalida")
+            throw Error("Intruccion Invalida")
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
             if(PuntoComa!==undefined){
@@ -122,6 +124,10 @@ function TraducirBloque(Instrucciones,PuntoComa){
         else{
             Code+=traducirValor(instruccion)+";\n"
         }
+    }
+    catch(e){
+        console.error(e.message)
+    }
         
     });
 
@@ -203,6 +209,7 @@ function AsigToString(instruccion){
 function AsigArrToString(instruccion){
     let TempTxt="";
     TempTxt+=instruccion.ID+"=["+traducirValor(instruccion.Posicion)+"]"
+    if(instruccion.Posicion2!==undefined){TempTxt+="["+traducirValor(instruccion.Posicion2)+"]"}
     TempTxt+="="+traducirValor(instruccion.Valor)
 
     return TempTxt
@@ -430,7 +437,11 @@ function traducirValor(valor){
         }
     }
     else if(Array.isArray(valor)){
-        if(valor[0].ID===undefined){
+
+        if(valor.length===0){
+            return "[]"
+        }
+        else if(valor[0].ID===undefined){
             return traducirArray(valor);
         }
         else{

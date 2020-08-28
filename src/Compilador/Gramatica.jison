@@ -155,9 +155,10 @@ declaracionAsignacion
 ;
 
 asignacion
-    : ID IGUAL expresion PUNTOYCOMA                                 {$$=AST_Tools.asignacion($1,$3)}
-    | ID CORIZQ expresion CORDER IGUAL expresion PUNTOYCOMA         {$$=AST_Tools.asignacionArr($1,$3,$6)}
-    | atributos IGUAL expresion PUNTOYCOMA                          {$$=AST_Tools.asignacion($1,$3)}
+    : ID IGUAL expresion PUNTOYCOMA                                                         {$$=AST_Tools.asignacion($1,$3)}
+    | ID CORIZQ expresion CORDER IGUAL expresion PUNTOYCOMA                                 {$$=AST_Tools.asignacionArr($1,$3,undefined,$6)}
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER IGUAL expresion PUNTOYCOMA         {$$=AST_Tools.asignacionArr($1,$3,$6,$9)}
+    | atributos IGUAL expresion PUNTOYCOMA                                                  {$$=AST_Tools.asignacion($1,$3)}
 ;
 
 tipo
@@ -246,6 +247,7 @@ expresion
     | llamadaFuncion                        { $$ = $1}
     | atributos                             { $$ = $1}
     | CORIZQ listaArr CORDER                { $$ = $2}
+    | CORIZQ  CORDER                        { $$ = []}
     | LLAVIZQ listaVal LLAVDER              { $$ = $2}
     | LLAVIZQ listaVal COMA LLAVDER         { $$ = $2}
     | LLAVIZQ listaVal PUNTOYCOMA LLAVDER   { $$ = $2}
@@ -297,14 +299,24 @@ sentenciasTransferencia
     | RETURN expresion PUNTOYCOMA       {$$=AST_Tools.nuevoReturn($2);} 
 ;
 
-/* GRAMATICA DESCENDENTE :O */
+/* GRAMATICAS DESCENDENTES :O */
 
 declaracionFuncion
-    : FUNCTION ID PARIZQ listaID PARDER DOSPUNTOS tipo LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevaFuncion($7,$2,$4,$9)} 
+    : FUNCTION ID PARIZQ listaIDFun PARDER DOSPUNTOS tipo LLAVIZQ instrucciones LLAVDER  {$$=AST_Tools.nuevaFuncion($7,$2,$4,$9)} 
     | FUNCTION ID PARIZQ  PARDER DOSPUNTOS tipo LLAVIZQ instrucciones LLAVDER         {$$=AST_Tools.nuevaFuncion($6,$2,undefined,$8)} 
-    | FUNCTION ID PARIZQ listaID PARDER DOSPUNTOS tipo LLAVIZQ  LLAVDER               {$$=AST_Tools.nuevaFuncion($7,$2,$4,undefined)}
+    | FUNCTION ID PARIZQ listaIDFun PARDER DOSPUNTOS tipo LLAVIZQ  LLAVDER               {$$=AST_Tools.nuevaFuncion($7,$2,$4,undefined)}
     | FUNCTION ID PARIZQ  PARDER DOSPUNTOS tipo LLAVIZQ  LLAVDER                      {$$=AST_Tools.nuevaFuncion($6,$2,undefined,undefined)}  
 ;
+
+listaIDFun
+    : ID DOSPUNTOS tipo listaIDFunPrima    {$$=$4;}
+;
+
+listaIDFunPrima
+    : COMA ID DOSPUNTOS tipo listaIDFunPrima {$5.push(AST_Tools.newID($-2,$-0));$$=$5}
+    | {$$=AST_Tools.newIDList($-1,$1);}
+;
+
 
 /* SENTENCIAS DE CONTROL DE FLUJO */
 

@@ -55,6 +55,8 @@ const Tipo_Instruccion = {
     BREAK:          	'INS_BREAK'
 }
 
+const _ = require('lodash')
+
 // Tipos de Datos
 const Tipo_Valor = {
     NUMBER:         'NUMBER',
@@ -169,11 +171,12 @@ const AST_Tools = {
 	* @param id 
 	* @param valor 
 	*/
-	asignacionArr: function(id,pos,valor) {
+	asignacionArr: function(id,pos,pos2,valor) {
 		return {
 			Tipo: Tipo_Instruccion.ASIGNACION_ARR,
             ID: id,
-            Posicion:pos,
+			Posicion:pos,
+			Posicion2:pos2,
 			Valor : valor
 		}
     },
@@ -341,7 +344,7 @@ const AST_Tools = {
 	nuevaFuncion: function (tipo,id,parametros,instrucciones){
 		return {
 			Tipo: Tipo_Instruccion.DECL_FUNCION,
-			Parametros: parametros,
+			Parametros: _.reverse(parametros),
 			ID: id,
 			Instrucciones : instrucciones,
 			TipoRetorno : tipo
