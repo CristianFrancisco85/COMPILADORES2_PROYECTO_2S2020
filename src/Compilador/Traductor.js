@@ -238,9 +238,12 @@ function IfToString(instruccion){
     
     TempTxt+=traducirValor(instruccion.ExpresionLogica)+"){\n"
     if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf)}
-    TempTxt+="}\nelse{\n"
-    if(instruccion.InstruccionesElse!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesElse)}
-    TempTxt+="}"
+    TempTxt+="}\n"
+    if(instruccion.InstruccionesElse!==undefined){
+        TempTxt+="else{\n"
+        TempTxt+=TraducirBloque(instruccion.InstruccionesElse)
+        TempTxt+="}"
+    }
     return TempTxt
 }
 

@@ -104,6 +104,7 @@ class TablaSimbolos {
 
 export function Ejecutar(ast){
     //Tabla de simbolos Global
+    Console.setValue("")
     let Global = new TablaSimbolos([])
     EjecutarBloque(ast,Global)
     console.log(Global.getsimbolos());
@@ -123,13 +124,13 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             LetDecExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST){
-            
+            ConstDecExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE){
             TypeDecExecute(instruccion,TablaSimbolos);
         }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION){
-            
+            AsigExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION_ARR){
             
@@ -138,22 +139,22 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             
         }
         else if(instruccion.Tipo===Tipo_Instruccion.SALIDA){
-            
+            ConsoleExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_IF){
-            
+            IfExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_TERNARIO){
             
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_WHILE){
-            
+            WhileExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_DO_WHILE){
-            
+            DoWhileExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR){
-            
+            ForExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR_OF){
             
@@ -179,8 +180,8 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
         else if(instruccion.Tipo===Tipo_Instruccion.RETURN){
             
         }
-        else{
-            
+        else if(instruccion.OpTipo===Tipo_Operacion.DECREMENTO||instruccion.OpTipo===Tipo_Operacion.INCREMENTO){
+            TablaSimbolos.actualizar(instruccion.OpIzq,ejecutarOperacionBinaria(instruccion,TablaSimbolos))
         }
 
     }
@@ -191,6 +192,17 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
     });
 
 }
+
+/**
+ * Ejecuta una salida a consola
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function ConsoleExecute(instruccion,ts){
+    Console.setValue(Console.getValue()+"[LOG]:\t"+ejecutarValor(instruccion.Valor,ts).Valor+"\n")
+}
+
+//SENTECNIAS DE DECLARACION Y ASIGNACION
 
 /**
  * Traduce una sentencia de declaracion de let
@@ -204,21 +216,150 @@ function LetDecExecute(instruccion,ts){
         ts.nuevoSimbolo(element.ID,element.Tipo,undefined,"LET")
         //Se asigna si fuera el caso
         if(element.Valor!==undefined){
-            ts.actualizar(element.ID,ejecutarValor(element.Valor,ts))
+            ts.actualizar(element.ID,JSON.parse(JSON.stringify(ejecutarValor(element.Valor,ts))))
         }
 
     });
     
 }
 
+/**
+ * Traduce una sentencia de declaracion de const
+ * @param {*} instruccion 
+ */
+function ConstDecExecute(instruccion,ts){
+
+    instruccion.ID.forEach((element, index, arr) => {
+
+        if(element.Valor!==undefined){
+            ts.nuevoSimbolo(element.ID,element.Tipo,JSON.parse(JSON.stringify(ejecutarValor(element.Valor,ts))),"CONST")
+            
+        }
+        else{
+            throw Error("Se tiene que asignar un valor a la constante "+element.ID)
+        }
+        
+    });
+    
+}
+
+/**
+ * Ejecuta la declaracion de un type
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
 function TypeDecExecute(instruccion,ts){
     //Se declara Type
     ts.nuevoSimbolo(instruccion.ID,undefined,instruccion.Attrib,"TYPE")
 }
 
+/**
+ * Ejecuta una sentencia de asignacion
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function AsigExecute(instruccion,ts){
+    //Si es una asginacion a un atributo
+    if(instruccion.ID.OpIzq!==undefined){
+        //Se obtiene referencia del valor a asignar
+        let aux = ejecutarValor(instruccion.ID,ts)
+        //Se obtiene valor a asignar
+        let aux2 = ejecutarValor(instruccion.Valor,ts)
+        if(aux.Tipo===aux2.Tipo){
+            aux.Valor=aux2.Valor
+        }
+        else{
+            throw Error("No se puede asignar "+aux2.Tipo+" a "+aux.Tipo)
+        }
+    }
+    else{
+        ts.actualizar(instruccion.ID,JSON.parse(JSON.stringify(ejecutarValor(instruccion.Valor,ts))))
+    }
+}
+
+//SENTENCIA DE CONTROL DE FLUJO
+
+/**
+ * Ejecuta un sentencia If
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function IfExecute(instruccion,ts){
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)    
+    if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
+        if(ExpBool.Valor){
+            Array.isArray(instruccion.InstruccionesIf)?EjecutarBloque(instruccion.InstruccionesIf,ts):EjecutarBloque([instruccion.InstruccionesIf],ts)
+        } 
+        else{
+            Array.isArray(instruccion.InstruccionesElse)?EjecutarBloque(instruccion.InstruccionesElse,ts):EjecutarBloque([instruccion.InstruccionesElse],ts)
+        }
+    }
+    else{
+        throw Error("Error al evaluar expresion booleana")
+    }
+}
+
+//SENTENCIAS DE REPETICION
+
+/**
+ * Ejecuta una sentencia While
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function WhileExecute(instruccion,ts){
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts) 
+    if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
+        while(ExpBool.Valor){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
+            ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)
+        }
+    }
+    else{
+        throw Error("Error al evaluar expresion booleana")
+    }
+}
+
+/**
+ * Ejecuta una sentencia DoWhile
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function DoWhileExecute(instruccion,ts){
+    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts) 
+    if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
+        while(ExpBool.Valor){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
+            ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)
+        }
+    }
+    else{
+        throw Error("Error al evaluar expresion booleana")
+    }
+}
+
+/**
+ * Ejecuta una sentencia For
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function ForExecute(instruccion,ts){
+    Array.isArray(instruccion.OperacionInicial)?EjecutarBloque(instruccion.OperacionInicial,ts):EjecutarBloque([instruccion.OperacionInicial],ts)
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts) 
+    if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
+        while(ExpBool.Valor){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
+            Array.isArray(instruccion.ExpresionPaso)?EjecutarBloque(instruccion.ExpresionPaso,ts):EjecutarBloque([instruccion.ExpresionPaso],ts)
+            ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)
+        }
+    }
+    else{
+        throw Error("Error al evaluar expresion booleana")
+    }
+}
+
 
 //FUNCIONES COMPLEMENTARIAS 
-
 
 /**
  * Ejecuta un valor
@@ -249,7 +390,7 @@ function ejecutarValor(valor,ts){
     }
     //Si es un id para operacion de atributo o acceso array
     else if(valor.Tipo===undefined&&valor.OpTipo===undefined){
-        return ts.getValor(valor).Valor
+        return ts.getValor(valor)
     }
     //Si es llamada de una funcion
     else if(valor.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
@@ -273,7 +414,7 @@ function ejecutarOperacionBinaria(valor,ts){
     let OpIzq,OpDer
 
     OpIzq=ejecutarValor(valor.OpIzq,ts);
-    if(valor.OpDer!==undefined){
+    if(valor.OpDer!==undefined&&valor.OpTipo!==Tipo_Operacion.ATRIBUTO){
     OpDer=ejecutarValor(valor.OpDer,ts)
     }
     
@@ -415,17 +556,38 @@ function ejecutarOperacionBinaria(valor,ts){
                 throw new Error("Error con !")
             }
         case Tipo_Operacion.ATRIBUTO:
-            //AQUI ME QUEDE
-            if(Array.isArray(OpIzq.Valor)){
-                if(OpDer.Tipo===Tipo_Valor.NUMBER){
-                    return OpIzq.Valor[Number(OpDer.Valor)]
+            OpIzq=OpIzq.Valor
+            OpDer=valor.OpDer
+            if(typeof OpIzq === 'object'){
+                //Si se accede a un array del objeto
+                if(OpDer.OpTipo===Tipo_Operacion.ACCESO_ARR){
+                    
+                    //Si se accede a una matriz
+                    if(OpDer.OpIzq.OpTipo===Tipo_Operacion.ACCESO_ARR){
+                        OpIzq=OpIzq[OpDer.OpIzq.OpIzq].Valor[ejecutarValor(OpDer.OpIzq.OpDer,ts).Valor].Valor
+                        return OpIzq[ejecutarValor(OpDer.OpDer,ts).Valor]
+                    }
+                    else{
+                        OpIzq=OpIzq[OpDer.OpIzq].Valor
+                        return OpIzq[ejecutarValor(OpDer.OpDer,ts).Valor]
+                    }
                 }
                 else{
-                    throw Error("No se puede a array sin expresion numerica");
+                    if(OpDer==="length"){
+                        if(Array.isArray(OpIzq)){
+                            return {Valor:OpIzq[OpDer],Tipo:Tipo_Valor.NUMBER}
+                        }
+                        else{
+                            return OpIzq[OpDer]
+                        }
+                    }
+                    else{
+                        return OpIzq[OpDer]
+                    }
                 }
             }
             else{
-                throw Error("No se puede a array porque no existe");
+                throw Error("No se puede a objeto porque no existe");
             }
         case Tipo_Operacion.ACCESO_ARR:
             if(Array.isArray(OpIzq)){

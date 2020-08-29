@@ -272,8 +272,8 @@ atributos
     | ID PUNTO llamadaFuncion                                               { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
 
     | ID CORIZQ expresion CORDER PUNTO ID                                   { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ATRIBUTO)}
-    | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER           { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$4,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
-    | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER    { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$4,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),$11,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER           { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
+    | ID CORIZQ expresion CORDER PUNTO ID CORIZQ expresion CORDER CORIZQ expresion CORDER    { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($6,$8,Tipo_Operacion.ACCESO_ARR),$11,Tipo_Operacion.ACCESO_ARR),Tipo_Operacion.ATRIBUTO)}
     | ID CORIZQ expresion CORDER PUNTO llamadaFuncion                       { $$ = AST_Tools.operacionBinaria(AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ACCESO_ARR),$6,Tipo_Operacion.ATRIBUTO)}     
 
     | llamadaFuncion PUNTO ID                                               { $$ = AST_Tools.operacionBinaria($1,$3,Tipo_Operacion.ATRIBUTO)}
