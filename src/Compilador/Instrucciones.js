@@ -32,8 +32,10 @@ const Tipo_Instruccion = {
     DECLARACION_LET:    'INS_DECLARACION_LET', 
     DECLARACION_TYPE:   'INS_DECLARACION_TYPE', 
     DECLARACION_CONST:  'INS_DECLARACION_CONST', 
-    ASIGNACION:			'INS_ASIGANCION', 
-    ASIGNACION_ARR:	    'INS_ASIGANCION_ARR', 
+	ASIGNACION:			'INS_ASIGANCION', 
+	MAS_ASIGNACION:		'INS_MAS_ASIGANCION', 
+	ASIGNACION_ARR:	    'INS_ASIGANCION_ARR', 
+	MAS_ASIGNACION_ARR:	'INS_MAS_ASIGANCION_ARR', 
     ACCESO_ARR:	        'INS_ACCESO_ARR', 
     GRAFICAR:           'INS_GRAFICAR', 
 	DECL_FUNCION:   	'INS_DECLARACION_FUNCION',
@@ -164,6 +166,19 @@ const AST_Tools = {
 			ID: id,
 			Valor : valor
 		}
+	},
+
+	/**
+	* Crea Instrucción para una asignacion.
+	* @param id 
+	* @param valor 
+	*/
+	masAsignacion: function(id, valor) {
+		return {
+			Tipo: Tipo_Instruccion.MAS_ASIGNACION,
+			ID: id,
+			Valor : valor
+		}
     },
     
     /**
@@ -174,6 +189,21 @@ const AST_Tools = {
 	asignacionArr: function(id,pos,pos2,valor) {
 		return {
 			Tipo: Tipo_Instruccion.ASIGNACION_ARR,
+            ID: id,
+			Posicion:pos,
+			Posicion2:pos2,
+			Valor : valor
+		}
+	},
+	
+	/**
+	* Crea Instrucción para una asignacion.
+	* @param id 
+	* @param valor 
+	*/
+	masAsignacionArr: function(id,pos,pos2,valor) {
+		return {
+			Tipo: Tipo_Instruccion.MAS_ASIGNACION_ARR,
             ID: id,
 			Posicion:pos,
 			Posicion2:pos2,
@@ -558,11 +588,12 @@ const Manejo_Errores = {
      * @param error Texto que dio error 
      * @param fila Numero de fila del error
 	 */
-	addErrorLexico:function(error,fila){
+	addErrorLexico:function(error,fila,columna){
 		ErroresLexicos.push(
 		{
 			Error:error,
 			Fila:fila,
+			Columna:columna
 		});
     },
 

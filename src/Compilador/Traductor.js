@@ -13,11 +13,68 @@ let BanderaFun
 //Arreglo de funciones desanidadas
 let Funciones
 
+/**
+ * Crea un símbolo en la tabla
+ * @param id ID del simbolo
+ * @param tipo Tipo de Dato
+ * @param valor Valor del simbolo
+ * @param tipo2 Let o Const
+ */
+function crearSimbolo(id,tipo,tipo2) {
+    return {
+        ID: id,
+        Tipo: tipo,
+        Tipo2:tipo2
+    }
+}
+
+class TablaSimbolos {
+
+    /**
+     * El constructor recibe una tabla la simbolos de su ambito.
+     * @param {*} simbolos 
+     */
+    constructor (simbolos) {
+        this.simbolos=[]
+        simbolos.forEach(element => {
+            this.simbolos.push(element)
+        });
+    }
+
+    /**
+     * Crea un símbolo en la tabla
+     * @param id ID del simbolo
+     * @param tipo Tipo de Dato
+     * @param valor Valor del simbolo
+     * @param tipo2 Let o Const
+     */
+    nuevoSimbolo(id,tipo,tipo2) {
+        let simbolo = _.filter(this.simbolos,function(simb) {
+            return simb.ID===id;
+        });
+        if(simbolo.length===0){
+            this.simbolos.push(crearSimbolo(id,tipo,tipo2));
+        }
+        else{
+            throw Error("No se puede declarar variable con ID: "+id+", por que ya existe")
+        }
+        
+    }
+
+    /**
+     * Funcion  para obtener los símbolos.
+     */
+    getsimbolos() {
+        return this.simbolos;
+    }
+}
+
 export function Traducir (Instrucciones){
     BanderaFun=false
     Funciones=[]
+    let Global = new TablaSimbolos([])
     AST=Instrucciones;
-    let Code=TraducirBloque(AST)
+    let Code=TraducirBloque(AST,undefined,Global)
     if(BanderaFun){
         Funciones.forEach(element => {
             if(element.length!==0){
@@ -37,7 +94,7 @@ export function ReturnAST(){
     return AST
 }
 
-function TraducirBloque(Instrucciones,PuntoComa){
+function TraducirBloque(Instrucciones,PuntoComa,TS){
     //Cadena que guarda el codigo traducido
     let Code="";
 
@@ -50,17 +107,17 @@ function TraducirBloque(Instrucciones,PuntoComa){
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
             if(PuntoComa!==undefined){
-                Code+=LetDecToString(instruccion);
+                Code+=LetDecToString(instruccion,TS);
             }
             else{
-                Code+=LetDecToString(instruccion)+";\n";
+                Code+=LetDecToString(instruccion,TS)+";\n";
             }
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST){
-            Code+=ConstDecToString(instruccion)+";\n";
+            Code+=ConstDecToString(instruccion,TS)+";\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE){
-            Code+=TypeDecToString(instruccion)+";\n";
+            Code+=TypeDecToString(instruccion,TS)+";\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION){
             if(PuntoComa!==undefined){
@@ -70,8 +127,19 @@ function TraducirBloque(Instrucciones,PuntoComa){
                 Code+=AsigToString(instruccion)+";\n";
             }
         }
+        else if(instruccion.Tipo===Tipo_Instruccion.MAS_ASIGNACION){
+            if(PuntoComa!==undefined){
+                Code+=MasAsigToString(instruccion);
+            }
+            else{
+                Code+=MasAsigToString(instruccion)+";\n";
+            }
+        }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION_ARR){
             Code+=AsigArrToString(instruccion)+";\n";
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.MAS_ASIGNACION_ARR){
+            Code+=MasAsigArrToString(instruccion,TS)+";\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
             Code+=CallFunToString(instruccion)+";\n";
@@ -80,35 +148,36 @@ function TraducirBloque(Instrucciones,PuntoComa){
             Code+="console.log("+traducirValor(instruccion.Valor)+");\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_IF){
-            Code+=IfToString(instruccion)+"\n";
+            Code+=IfToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_TERNARIO){
-            Code+=TernarioToString(instruccion)+"\n";
+            Code+=TernarioToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_WHILE){
-            Code+=WhileToString(instruccion)+"\n";
+            Code+=WhileToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_DO_WHILE){
-            Code+=DoWhileToString(instruccion)+"\n";
+            Code+=DoWhileToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR){
-            Code+=ForToString(instruccion)+"\n";
+            Code+=ForToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR_OF){
-            Code+=ForOfToString(instruccion)+"\n";
+            Code+=ForOfToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR_IN){
-            Code+=ForInToString(instruccion)+"\n";
+            Code+=ForInToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_SWITCH){
-            Code+=SwitchToString(instruccion)+"\n";
+            Code+=SwitchToString(instruccion,TS)+"\n";
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION){
-            Code+=FunToString(instruccion);
+            Code+=FunToString(instruccion,TS);
         }
         //----
         else if(instruccion.Tipo===Tipo_Instruccion.GRAFICAR){
             Code+="graficar_ts();\n";
+            console.log(TS.simbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.CONTINUE){
             Code+="continue;\n";
@@ -122,7 +191,7 @@ function TraducirBloque(Instrucciones,PuntoComa){
             Code+=";\n"
         }
         else{
-            Code+=traducirValor(instruccion)+";\n"
+            Code+=traducirValor(instruccion,TS)+";\n"
         }
     }
     catch(e){
@@ -140,7 +209,7 @@ function TraducirBloque(Instrucciones,PuntoComa){
  * Traduce una sentencia de declaracion de let
  * @param {*} instruccion 
  */
-function LetDecToString(instruccion){
+function LetDecToString(instruccion,TS){
     let TempTxt;
     TempTxt= "let "
     instruccion.ID.forEach((element, index, arr) => {
@@ -148,7 +217,7 @@ function LetDecToString(instruccion){
         TempTxt+= element.ID;
         if(element.Tipo===undefined){}else{TempTxt+=":"+traducirTipo(element.Tipo);}
         if(element.Valor===undefined){}else{TempTxt+="="+traducirValor(element.Valor);}
-
+        TS.nuevoSimbolo(element.ID,element.Tipo,"LET")
         if(arr[index+1]===undefined){}else{TempTxt+=","}
     });
     return TempTxt
@@ -158,7 +227,7 @@ function LetDecToString(instruccion){
  * Traduce una sentencia de declacion de const
  * @param {*} instruccion 
  */
-function ConstDecToString(instruccion){
+function ConstDecToString(instruccion,TS){
     let TempTxt;
     TempTxt= "const "
     instruccion.ID.forEach((element, index, arr) => {
@@ -166,7 +235,7 @@ function ConstDecToString(instruccion){
         TempTxt+= element.ID;
         if(element.Tipo===undefined){}else{TempTxt+=":"+traducirTipo(element.Tipo);}
         if(element.Valor===undefined){}else{TempTxt+="="+traducirValor(element.Valor);}
-
+        TS.nuevoSimbolo(element.ID,element.Tipo,"CONST")
         if(arr[index+1]===undefined){}else{TempTxt+=","}
     });
     return TempTxt
@@ -176,12 +245,12 @@ function ConstDecToString(instruccion){
  * Traduce una sentencia de declaracion de type
  * @param {*} instruccion 
  */
-function TypeDecToString(instruccion){
+function TypeDecToString(instruccion,TS){
     let TempTxt;
     TempTxt= "type "
     TempTxt+= instruccion.ID;
     TempTxt+="="+traducirAttrib(instruccion.Attrib);
- 
+    TS.nuevoSimbolo(instruccion.ID,undefined,"TYPE")
     return TempTxt
 }
 
@@ -203,6 +272,23 @@ function AsigToString(instruccion){
 }
 
 /**
+ * Traduce una asignacion
+ * @param {*} instruccion 
+ */
+function MasAsigToString(instruccion){
+    let TempTxt="";
+    if(typeof instruccion.ID ==="string"){
+        TempTxt+=instruccion.ID
+    }
+    else{
+        TempTxt+=traducirValor(instruccion.ID)
+    }
+    TempTxt+="+="+traducirValor(instruccion.Valor)
+
+    return TempTxt
+}
+
+/**
  * Traduce la asignacion de un posicion de un array
  * @param {*} instruccion 
  */
@@ -211,6 +297,19 @@ function AsigArrToString(instruccion){
     TempTxt+=instruccion.ID+"=["+traducirValor(instruccion.Posicion)+"]"
     if(instruccion.Posicion2!==undefined){TempTxt+="["+traducirValor(instruccion.Posicion2)+"]"}
     TempTxt+="="+traducirValor(instruccion.Valor)
+
+    return TempTxt
+}
+
+/**
+ * Traduce la asignacion de un posicion de un array
+ * @param {*} instruccion 
+ */
+function MasAsigArrToString(instruccion){
+    let TempTxt="";
+    TempTxt+=instruccion.ID+"=["+traducirValor(instruccion.Posicion)+"]"
+    if(instruccion.Posicion2!==undefined){TempTxt+="["+traducirValor(instruccion.Posicion2)+"]"}
+    TempTxt+="+="+traducirValor(instruccion.Valor)
 
     return TempTxt
 }
@@ -233,15 +332,15 @@ function CallFunToString(instruccion){
  * Traduce un bloque If-Else
  * @param {*} instruccion 
  */
-function IfToString(instruccion){   
+function IfToString(instruccion,TS){   
     let TempTxt="if("
-    
+    let newTS=new TablaSimbolos(TS.simbolos)
     TempTxt+=traducirValor(instruccion.ExpresionLogica)+"){\n"
-    if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf)}
+    if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf,undefined,newTS)}
     TempTxt+="}\n"
     if(instruccion.InstruccionesElse!==undefined){
         TempTxt+="else{\n"
-        TempTxt+=TraducirBloque(instruccion.InstruccionesElse)
+        TempTxt+=TraducirBloque(instruccion.InstruccionesElse,undefined,newTS)
         TempTxt+="}"
     }
     return TempTxt
@@ -251,13 +350,13 @@ function IfToString(instruccion){
  * Traduce un bloque Ternario
  * @param {*} instruccion 
  */
-function TernarioToString(instruccion){   
+function TernarioToString(instruccion,TS){   
     let TempTxt=""
-    
+    let newTS=new TablaSimbolos(TS.simbolos)
     TempTxt+=traducirValor(instruccion.ExpresionLogica)+"?"
-    if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf,false)}
+    if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf,false,newTS)}
     TempTxt+=":"
-    if(instruccion.InstruccionesElse!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesElse,false)}
+    if(instruccion.InstruccionesElse!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesElse,false,newTS)}
     TempTxt+=";"
     return TempTxt
 }
@@ -266,10 +365,11 @@ function TernarioToString(instruccion){
  * Traduce un bloque While
  * @param {*} instruccion 
  */
-function WhileToString(instruccion){   
+function WhileToString(instruccion,TS){ 
+    let newTS=new TablaSimbolos(TS.simbolos)  
     let TempTxt="while("
     TempTxt+=traducirValor(instruccion.ExpresionLogica)+"){\n"
-    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones)}
+    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)}
     TempTxt+="}"
     return TempTxt
 }
@@ -278,9 +378,10 @@ function WhileToString(instruccion){
  * Traduce un bloque Do-While
  * @param {*} instruccion 
  */
-function DoWhileToString(instruccion){   
+function DoWhileToString(instruccion,TS){   
+    let newTS=new TablaSimbolos(TS.simbolos)
     let TempTxt="do{\n"
-    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones)}
+    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)}
     TempTxt+="\n}while("+traducirValor(instruccion.ExpresionLogica)+")"
     return TempTxt
 }
@@ -289,13 +390,14 @@ function DoWhileToString(instruccion){
  * Traduce un bloque For
  * @param {*} instruccion 
  */
-function ForToString(instruccion){
+function ForToString(instruccion,TS){
+    let newTS=new TablaSimbolos(TS.simbolos)
     let TempTxt=""
     TempTxt+="for("
-    TempTxt+=TraducirBloque([instruccion.OperacionInicial],false)+";"
+    TempTxt+=TraducirBloque([instruccion.OperacionInicial],false,newTS)+";"
     TempTxt+=traducirValor(instruccion.ExpresionLogica)+";"
     TempTxt+=traducirValor(instruccion.ExpresionPaso)+"){\n"
-    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones)}
+    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)}
     TempTxt+="\n}"
     return TempTxt  
 }
@@ -304,11 +406,12 @@ function ForToString(instruccion){
  * Traduce un bloque For-Of
  * @param {*} instruccion 
  */
-function ForOfToString(instruccion){
+function ForOfToString(instruccion,TS){
+    let newTS=new TablaSimbolos(TS.simbolos)
     let TempTxt="for(";
-    TempTxt+=TraducirBloque([instruccion.AuxVar],false)
+    TempTxt+=TraducirBloque([instruccion.AuxVar],false,newTS)
     TempTxt+=" of "+traducirValor(instruccion.Var)+"){\n"
-    TempTxt+=TraducirBloque(instruccion.Instrucciones)
+    TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)
     TempTxt+="}\n"
     return TempTxt
 }
@@ -317,11 +420,12 @@ function ForOfToString(instruccion){
  * Traduce un bloque For-In
  * @param {*} instruccion 
  */
-function ForInToString(instruccion){
+function ForInToString(instruccion,TS){
+    let newTS=new TablaSimbolos(TS.simbolos)
     let TempTxt="for(";
-    TempTxt+=TraducirBloque([instruccion.AuxVar],false)
+    TempTxt+=TraducirBloque([instruccion.AuxVar],false,newTS)
     TempTxt+=" in "+traducirValor(instruccion.Var)+"){\n"
-    TempTxt+=TraducirBloque(instruccion.Instrucciones)
+    TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)
     TempTxt+="}\n"
     return TempTxt
 }
@@ -330,10 +434,11 @@ function ForInToString(instruccion){
  * Traduce un bloque switch
  * @param {*} instruccion 
  */
-function SwitchToString(instruccion){
+function SwitchToString(instruccion,TS){
+    let newTS=new TablaSimbolos(TS.simbolos)
     let TempTxt="";
     TempTxt+="switch("+traducirValor(instruccion.Expresion)+"){\n"
-    TempTxt+=traducirCasos(instruccion.Casos);
+    TempTxt+=traducirCasos(instruccion.Casos,newTS);
     TempTxt+="}"
     return TempTxt
 }
@@ -342,7 +447,8 @@ function SwitchToString(instruccion){
  * Se traduce una funcion y se realiza desanidado de funciones
  * @param {*} instruccion 
  */
-function FunToString(instruccion){
+function FunToString(instruccion,TS){
+    let newTS=new TablaSimbolos(TS.simbolos)
     let TempTxt="";
     let TempFunciones=[]
     //Se extraen funciones anidadas
@@ -364,7 +470,7 @@ function FunToString(instruccion){
         });
     }   
     TempTxt+="):"+traducirTipo(instruccion.TipoRetorno)+"{\n"
-    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones)}
+    if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)}
     TempTxt+="}\n"
 
     /*Para cada funcion anidada se establece un atributo heredado 
@@ -567,17 +673,17 @@ function traducirParams(array){
  * Traduce una lista de casos de un Switch
  * @param {*} array 
  */
-function traducirCasos(array){
+function traducirCasos(array,ts){
     let TempTxt="";
     array.forEach((element, index, arr) => {
         if(element.Tipo===Tipo_Instruccion.CASO_SWITCH){
-            TempTxt+="case "+traducirValor(element.CasoExpresion)+":{\n";
+            TempTxt+="case "+traducirValor(element.CasoExpresion)+":\n";
         }
         else{
-            TempTxt+="default :{\n";
+            TempTxt+="default :\n";
         }
-        TempTxt+=TraducirBloque(element.Instrucciones)
-        TempTxt+="}\n"
+        TempTxt+=TraducirBloque(element.Instrucciones,undefined,ts)
+        TempTxt+="\n"
     });
     return TempTxt;
 }

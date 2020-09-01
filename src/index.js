@@ -25,7 +25,7 @@ import {setLC} from './scripts/mainScript.js'
 import {setViewer} from './scripts/mainScript.js'
 import {setConsole} from './scripts/mainScript.js'
 import {translate} from './scripts/mainScript.js'
-
+import {execute} from './scripts/mainScript.js'
 
 
 //Creacion de areas de codigo
@@ -86,7 +86,7 @@ function Viewer(){
 
 
 //Creacion de Botones
-function BtnTranslate(props){
+function BtnTranslate(){
   return(
     <button className="btn btn-warning col-md-2 " onClick={translate} >Traducir </button>
   )
@@ -96,7 +96,7 @@ function BtnTranslate(props){
 function BtnRun(){
 
   return(
-    <button className="btn btn-success col-md-2 offset-md-1 " onClick={translate} >Ejecutar </button>
+    <button className="btn btn-success col-md-2 offset-md-1 " onClick={execute} >Ejecutar </button>
   )
 
 }
@@ -130,6 +130,20 @@ function MainComponent(){
 
       <div className=" row col-md-12 ">
         <Console></Console>
+      </div>
+
+      <div className="row col-md-12">
+        <div className="col-md-6 divcontent ">
+          <h4>Errores Lexicos</h4>
+          <div id="Lexicos" className="divLexicos">             
+          </div>
+        </div>
+        
+        <div className="col-md-6 divcontent ">
+          <h4>Errores Sintacticos</h4>
+          <div id="Sintacticos" className="divSintacticos">
+          </div>
+        </div>
       </div>
 
     </div>

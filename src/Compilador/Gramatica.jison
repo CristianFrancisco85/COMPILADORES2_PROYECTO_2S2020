@@ -25,6 +25,7 @@
 
 "++"                        return 'INCREMENTO';
 "--"                        return 'DECREMENTO';
+"+="                        return 'MAS_ASIG';
 "/"                         return 'OPDIV';
 "**"                        return 'OPCIRCU';
 "*"                         return 'OPMULTI';
@@ -79,11 +80,11 @@
 
 \"(\\\"|[^\"])*\"			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
 \'(\\\"|[^\"])*\'			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
-\`(\\\"|[^\"])*\`			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
+\`(\\\"|[^\"])*\`  			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
 [0-9]+("."[0-9]+)?\b        return 'NUMERO'
 ([a-zA-Z])[a-zA-Z0-9_]*	    return 'ID';
 <<EOF>>                     return 'EOF';
-.                           {Manejo_Errores.addErrorLexico(yytext,yylineno+1);return''}
+.                           {Manejo_Errores.addErrorLexico(yytext,yylineno+1,yylloc.first_column);return''}
 
 /lex
 
@@ -125,6 +126,7 @@ instrucciones
 
 instruccion
     : asignacion                                            {$$=$1}
+    | masAsig                                               {$$=$1}
     | declaracionAsignacion                                 {$$=$1}
     | bloqueIf                                              {$$=$1}
     | bloqueTernario                                        {$$=$1}
@@ -147,11 +149,11 @@ instruccion
 /*DECLARACIONES, ASIGNACIONES Y EXPRESIONES*/
 
 declaracionAsignacion
-    : LET listaID PUNTOYCOMA                                {$$=AST_Tools.declaracion_let($2)}
-    | CONST listaID PUNTOYCOMA                              {$$=AST_Tools.declaracion_const($2)}
-    | TYPE ID IGUAL LLAVIZQ listaAttrib LLAVDER             {$$=AST_Tools.declaracion_type($2,$5)}
-    | TYPE ID IGUAL LLAVIZQ listaAttrib COMA LLAVDER        {$$=AST_Tools.declaracion_type($2,$5)}
-    | TYPE ID IGUAL LLAVIZQ listaAttrib PUNTOYCOMA LLAVDER  {$$=AST_Tools.declaracion_type($2,$5)}
+    : LET listaID PUNTOYCOMA                                            {$$=AST_Tools.declaracion_let($2)}
+    | CONST listaID PUNTOYCOMA                                          {$$=AST_Tools.declaracion_const($2)}
+    | TYPE ID IGUAL LLAVIZQ listaAttrib LLAVDER PUNTOYCOMA              {$$=AST_Tools.declaracion_type($2,$5)}
+    | TYPE ID IGUAL LLAVIZQ listaAttrib COMA LLAVDER PUNTOYCOMA         {$$=AST_Tools.declaracion_type($2,$5)}
+    | TYPE ID IGUAL LLAVIZQ listaAttrib PUNTOYCOMA LLAVDER PUNTOYCOMA   {$$=AST_Tools.declaracion_type($2,$5)}
 ;
 
 asignacion
@@ -159,6 +161,13 @@ asignacion
     | ID CORIZQ expresion CORDER IGUAL expresion PUNTOYCOMA                                 {$$=AST_Tools.asignacionArr($1,$3,undefined,$6)}
     | ID CORIZQ expresion CORDER CORIZQ expresion CORDER IGUAL expresion PUNTOYCOMA         {$$=AST_Tools.asignacionArr($1,$3,$6,$9)}
     | atributos IGUAL expresion PUNTOYCOMA                                                  {$$=AST_Tools.asignacion($1,$3)}
+;
+
+masAsig
+    : ID MAS_ASIG expresion PUNTOYCOMA                                                         {$$=AST_Tools.masAsignacion($1,$3)}
+    | ID CORIZQ expresion CORDER MAS_ASIG expresion PUNTOYCOMA                                 {$$=AST_Tools.masAsignacionArr($1,$3,undefined,$6)}
+    | ID CORIZQ expresion CORDER CORIZQ expresion CORDER MAS_ASIG expresion PUNTOYCOMA         {$$=AST_Tools.masAsignacionArr($1,$3,$6,$9)}
+    | atributos MAS_ASIG expresion PUNTOYCOMA                                                  {$$=AST_Tools.masAsignacion($1,$3)}
 ;
 
 tipo
@@ -226,8 +235,6 @@ expresion
 	| NUMERO							    { $$ = AST_Tools.crearValor(Number($1),Tipo_Valor.NUMBER); }
 	| ID                                    { $$ = AST_Tools.crearValor($1,Tipo_Valor.ID); }
     | CADENA                                { $$ = AST_Tools.crearValor($1,Tipo_Valor.STRING); }
-    | NUMERO DECREMENTO                     { $$ = AST_Tools.operacionBinaria (Number($1),undefined,Tipo_Operacion.DECREMENTO); }
-    | NUMERO INCREMENTO                     { $$ = AST_Tools.operacionBinaria (Number($1),undefined,Tipo_Operacion.INCREMENTO); }
     | incremento_decremento                 { $$ = $1}
     //LOGICAS
     | expresion AND expresion               { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.AND);}
@@ -256,8 +263,8 @@ expresion
 ;
 
 incremento_decremento 
-    : ID DECREMENTO     { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.DECREMENTO); }
-    | ID INCREMENTO     { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.INCREMENTO); }
+    : expresion DECREMENTO     { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.DECREMENTO); }
+    | expresion INCREMENTO     { $$ = AST_Tools.operacionBinaria ($1,undefined,Tipo_Operacion.INCREMENTO); }
 ;
 
 atributos
@@ -351,10 +358,10 @@ casos
 ;
 
 caso 
-    : CASE expresion DOSPUNTOS LLAVIZQ instrucciones LLAVDER      {$$=AST_Tools.nuevoCaso($2,$5);}
-    | DEFAULT DOSPUNTOS LLAVIZQ instrucciones LLAVDER             {$$=AST_Tools.nuevoCasoDefault($4);}
-    | CASE expresion DOSPUNTOS LLAVIZQ LLAVDER                    {$$=AST_Tools.nuevoCaso($2,undefined);}
-    | DEFAULT DOSPUNTOS LLAVIZQ LLAVDER                           {$$=AST_Tools.nuevoCasoDefault(undefined);}
+    : CASE expresion DOSPUNTOS  instrucciones       {$$=AST_Tools.nuevoCaso($2,$4);}
+    | DEFAULT DOSPUNTOS  instrucciones              {$$=AST_Tools.nuevoCasoDefault($3);}
+    | CASE expresion DOSPUNTOS                      {$$=AST_Tools.nuevoCaso($2,undefined);}
+    | DEFAULT DOSPUNTOS                             {$$=AST_Tools.nuevoCasoDefault(undefined);}
 ;
 
 /* SENTENCIAS DE REPETICION */

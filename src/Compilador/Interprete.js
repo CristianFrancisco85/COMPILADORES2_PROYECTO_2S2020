@@ -2,6 +2,7 @@ import { Tipo_Instruccion } from './Instrucciones.js';
 import { Tipo_Operacion } from './Instrucciones.js';
 import { Tipo_Valor } from './Instrucciones.js';
 import { Console } from '../scripts/mainScript.js';
+import { includes, stubTrue } from 'lodash';
 
 const _ = require('lodash')
 
@@ -29,7 +30,10 @@ class TablaSimbolos {
      * @param {*} simbolos 
      */
     constructor (simbolos) {
-        this.simbolos = simbolos;
+        this.simbolos=[]
+        simbolos.forEach(element => {
+            this.simbolos.push(element)
+        });
     }
 
     /**
@@ -63,15 +67,42 @@ class TablaSimbolos {
             return simb.ID===id;
         });
         simbolo=simbolo[0]
-        if (simbolo!==undefined) {
-            if(simbolo.Tipo===valor.Tipo||simbolo.Tipo===undefined){
 
+        if(simbolo.Tipo2==="CONST"){    
+            throw Error("No se puede cambiar el valor de la constante "+simbolo.ID)
+        }
+
+        if (simbolo!==undefined) {
+
+            if(simbolo.Tipo===valor.Tipo||simbolo.Tipo===undefined){
                 simbolo.Valor=valor.Valor
                 simbolo.Tipo=valor.Tipo
-                
-            }else{
+            }
+            else if(simbolo.Tipo==="ARR"){
+                if(valor.Tipo.includes("_ARR")){
+                    simbolo.Valor=valor.Valor
+                    simbolo.Tipo=valor.Tipo
+                }
+                else{
+                    throw new Error("Error Semantico : variable " + id + " es de tipo " +simbolo.Tipo +" no se le puede asignar un "+valor.Tipo)
+                }
+            }
+            else if(valor.Tipo==="ARR"){
+                if(simbolo.Tipo.includes("_ARR")){
+                    simbolo.Valor=valor.Valor
+                }    
+                else{
+                    throw new Error("Error Semantico : variable " + id + " es de tipo " +simbolo.Tipo +" no se le puede asignar un "+valor.Tipo)
+                }
+            }
+            else{
                 throw new Error("Error Semantico : variable " + id + " es de tipo " +simbolo.Tipo +" no se le puede asignar un "+valor.Tipo)
             }
+
+            if(simbolo.Tipo2==="CONST2"){
+                simbolo.Tipo2="CONST"
+            }
+
         }
         else {
             throw new Error("Error : variable " + id + " no ha sido definida")
@@ -91,7 +122,7 @@ class TablaSimbolos {
         if (simbolo){
             return simbolo
         }
-        throw new Error ("Error ; variable " + id + " no ha sido definida")
+        throw new Error ("Error : variable " + id + " no ha sido definida")
     }
 
     /**
@@ -132,8 +163,14 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION){
             AsigExecute(instruccion,TablaSimbolos)
         }
+        else if(instruccion.Tipo===Tipo_Instruccion.MAS_ASIGNACION){
+            MasAsigExecute(instruccion,TablaSimbolos)
+        }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION_ARR){
-            
+            ArrayAsigExecute(instruccion,TablaSimbolos)
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.MAS_ASIGNACION_ARR){
+            ArrayMasAsigExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
             
@@ -157,35 +194,39 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             ForExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR_OF){
-            
+            ForOfExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_FOR_IN){
-            
+            ForInExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_SWITCH){
-            
+            SwitchExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION){
-            
+            FunDecExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.GRAFICAR){
-            
+            Console.setValue(Console.getValue()+"[TABLA SIMBOLOS]:\t"+JSON.stringify(TablaSimbolos.simbolos)+"\n")
         }
         else if(instruccion.Tipo===Tipo_Instruccion.CONTINUE){
-            
+            throw new Continue()
         }
         else if(instruccion.Tipo===Tipo_Instruccion.BREAK){
-            
+            throw new Break()
         }
         else if(instruccion.Tipo===Tipo_Instruccion.RETURN){
             
         }
         else if(instruccion.OpTipo===Tipo_Operacion.DECREMENTO||instruccion.OpTipo===Tipo_Operacion.INCREMENTO){
-            TablaSimbolos.actualizar(instruccion.OpIzq,ejecutarOperacionBinaria(instruccion,TablaSimbolos))
+            IncDecExecute(instruccion,TablaSimbolos)
         }
 
     }
     catch(e){
+        if(e instanceof Break || e instanceof Continue){
+            throw e
+        }
+        Console.setValue(Console.getValue()+"[ERROR]:\t"+e.message+"\n")
         console.error(e)
     }
         
@@ -202,7 +243,7 @@ function ConsoleExecute(instruccion,ts){
     Console.setValue(Console.getValue()+"[LOG]:\t"+ejecutarValor(instruccion.Valor,ts).Valor+"\n")
 }
 
-//SENTECNIAS DE DECLARACION Y ASIGNACION
+//SENTENCIAS DE DECLARACION Y ASIGNACION
 
 /**
  * Traduce una sentencia de declaracion de let
@@ -231,9 +272,11 @@ function ConstDecExecute(instruccion,ts){
 
     instruccion.ID.forEach((element, index, arr) => {
 
+        //Se declara
+        ts.nuevoSimbolo(element.ID,element.Tipo,undefined,"CONST2")
+        //Se asigna si fuera el caso
         if(element.Valor!==undefined){
-            ts.nuevoSimbolo(element.ID,element.Tipo,JSON.parse(JSON.stringify(ejecutarValor(element.Valor,ts))),"CONST")
-            
+            ts.actualizar(element.ID,JSON.parse(JSON.stringify(ejecutarValor(element.Valor,ts))))
         }
         else{
             throw Error("Se tiene que asignar un valor a la constante "+element.ID)
@@ -259,22 +302,138 @@ function TypeDecExecute(instruccion,ts){
  * @param {*} ts 
  */
 function AsigExecute(instruccion,ts){
-    //Si es una asginacion a un atributo
-    if(instruccion.ID.OpIzq!==undefined){
-        //Se obtiene referencia del valor a asignar
-        let aux = ejecutarValor(instruccion.ID,ts)
-        //Se obtiene valor a asignar
-        let aux2 = ejecutarValor(instruccion.Valor,ts)
-        if(aux.Tipo===aux2.Tipo){
-            aux.Valor=aux2.Valor
-        }
-        else{
-            throw Error("No se puede asignar "+aux2.Tipo+" a "+aux.Tipo)
-        }
+    
+    //Se obtiene referencia del valor a asignar
+    let aux = ejecutarValor(instruccion.ID,ts)
+    if(aux.Tipo2==="CONST"){
+        throw Error("No se puede asignar constante "+aux.ID)
+    }
+    //Se obtiene valor a asignar
+    let aux2 = ejecutarValor(instruccion.Valor,ts)
+    if(aux.Tipo===aux2.Tipo){
+        aux.Valor=aux2.Valor
     }
     else{
-        ts.actualizar(instruccion.ID,JSON.parse(JSON.stringify(ejecutarValor(instruccion.Valor,ts))))
+        throw Error("No se puede asignar "+aux2.Tipo+" a "+aux.Tipo)
     }
+    
+
+}
+
+/**
+ * Ejecuta una sentencia de asignacion
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function IncDecExecute(instruccion,ts){
+    
+    //Se obtiene referencia del valor a asignar
+    let aux = ejecutarValor(instruccion.OpIzq,ts)
+    //Se obtiene valor a asignar
+    let aux2 = ejecutarValor(instruccion,ts)
+    aux.Valor=aux2.Valor
+
+}
+
+/**
+ * Ejecuta una sentencia de asignacion
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function MasAsigExecute(instruccion,ts){
+  
+    //Se obtiene referencia del valor a asignar
+    let aux = ejecutarValor(instruccion.ID,ts)
+    //Se obtiene valor a asignar
+    let aux2 = ejecutarValor(instruccion.Valor,ts)
+    if(aux.Tipo===aux2.Tipo){
+        aux.Valor+=aux2.Valor
+    }
+    else{
+        throw Error("No se puede asignar "+aux2.Tipo+" a "+aux.Tipo)
+    }   
+
+}
+
+/**
+ * Ejecuta la sentencia de asignar un array que no venga de un atributo
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function ArrayAsigExecute(instruccion,ts){
+    //Se obtiene array
+    let aux=ejecutarValor(instruccion.ID,ts)
+    //Se verifica que no sea una constante
+    if(aux.Tipo2==="CONST"){
+        throw Error("No se puede asignar "+aux.ID+" porque es una constante ")
+    }
+    //Se obtiene nuevo valor
+    let newVal = ejecutarValor(instruccion.Valor,ts) 
+
+    //Se obtiene referencia a la posicion
+    if(instruccion.Posicion2!==undefined){
+        aux=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)].Valor[Number(ejecutarValor(instruccion.Posicion2,ts).Valor)]
+    }
+    else{
+        aux=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)]
+    }
+    //Se verifican tipos
+    if(aux.Tipo===newVal.Tipo){
+        aux.Valor=newVal.Valor
+    }
+    else{
+        throw Error("No se puede asignar "+newVal.Tipo+" en un array tipo "+aux.Tipo)
+    }
+
+}
+
+/**
+ * Ejecuta la sentencia de asignar un array que no venga de un atributo
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function ArrayMasAsigExecute(instruccion,ts){
+    //Se obtiene array
+    let aux=ejecutarValor(instruccion.ID,ts)
+    //Se verifica que no sea una constante
+    if(aux.Tipo2==="CONST"){
+        throw Error("No se puede asignar "+aux.ID+" porque es una constante ")
+    }
+    //Se obtiene nuevo valor
+    let newVal = ejecutarValor(instruccion.Valor,ts) 
+
+    //Se obtiene referencia a la posicion
+    if(instruccion.Posicion2!==undefined){
+        aux=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)].Valor[Number(ejecutarValor(instruccion.Posicion2,ts).Valor)]
+    }
+    else{
+        aux=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)]
+    }
+    //Se verifican tipos
+    if(aux.Tipo===newVal.Tipo){
+        aux.Valor+=newVal.Valor
+    }
+    else{
+        throw Error("No se puede asignar "+newVal.Tipo+" en un array tipo "+aux.Tipo)
+    }
+
+}
+
+/**
+ * Ejecuta una sentencia de declaraciion de una funcion
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function FunDecExecute(instruccion,ts){
+    
+    let aux={
+        Parametros:instruccion.Parametros,
+        Instrucciones:instruccion.Instrucciones,
+        TipoRetorno:instruccion.TipoRetorno
+    }
+
+    ts.nuevoSimbolo(instruccion.ID,undefined,aux,"FUNCTION")
+
 }
 
 //SENTENCIA DE CONTROL DE FLUJO
@@ -288,14 +447,41 @@ function IfExecute(instruccion,ts){
     let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)    
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
         if(ExpBool.Valor){
+            if(instruccion.InstruccionesIf!==undefined){
             Array.isArray(instruccion.InstruccionesIf)?EjecutarBloque(instruccion.InstruccionesIf,ts):EjecutarBloque([instruccion.InstruccionesIf],ts)
+            }
         } 
         else{
+            if(instruccion.InstruccionesElse!==undefined){
             Array.isArray(instruccion.InstruccionesElse)?EjecutarBloque(instruccion.InstruccionesElse,ts):EjecutarBloque([instruccion.InstruccionesElse],ts)
+            }
         }
     }
     else{
         throw Error("Error al evaluar expresion booleana")
+    }
+}
+
+function SwitchExecute(instruccion,ts){
+    //Se obtiene referencia del valor a evaluar
+    let aux = ejecutarValor(instruccion.Expresion,ts)
+    //Lista de casos
+    let Casos=instruccion.Casos
+    //Indica si ya se hizo match
+    let bool=false
+    try{
+        for(let i=0;i<Casos.length;i++){
+            if(Casos[i].Tipo===Tipo_Instruccion.CASO_DEFAULT){
+                Array.isArray(Casos[i].Instrucciones)?EjecutarBloque(Casos[i].Instrucciones,ts):EjecutarBloque([Casos[i].Instrucciones],ts)
+            }
+            else if(ejecutarValor(Casos[i].CasoExpresion).Valor===aux.Valor||bool){
+                bool=true
+                Array.isArray(Casos[i].Instrucciones)?EjecutarBloque(Casos[i].Instrucciones,ts):EjecutarBloque([Casos[i].Instrucciones],ts)
+            }
+        }
+    }
+    catch(e){
+        if(e instanceof Break){console.log("BREAK!")}
     }
 }
 
@@ -307,11 +493,14 @@ function IfExecute(instruccion,ts){
  * @param {*} ts 
  */
 function WhileExecute(instruccion,ts){
-    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts) 
+    let newTS = new TablaSimbolos(ts.simbolos); 
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS) 
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
         while(ExpBool.Valor){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
-            ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)
+            if(instruccion.Instrucciones!==undefined){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+            }
+            ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
         }
     }
     else{
@@ -325,12 +514,17 @@ function WhileExecute(instruccion,ts){
  * @param {*} ts 
  */
 function DoWhileExecute(instruccion,ts){
-    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
-    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts) 
+    let newTS = new TablaSimbolos(ts.simbolos); 
+    if(instruccion.Instrucciones!==undefined){
+    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+    }
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS) 
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
         while(ExpBool.Valor){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
-            ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)
+            if(instruccion.Instrucciones!==undefined){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+            }
+            ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
         }
     }
     else{
@@ -344,17 +538,86 @@ function DoWhileExecute(instruccion,ts){
  * @param {*} ts 
  */
 function ForExecute(instruccion,ts){
-    Array.isArray(instruccion.OperacionInicial)?EjecutarBloque(instruccion.OperacionInicial,ts):EjecutarBloque([instruccion.OperacionInicial],ts)
-    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts) 
+    let newTS = new TablaSimbolos(ts.simbolos); 
+    Array.isArray(instruccion.OperacionInicial)?EjecutarBloque(instruccion.OperacionInicial,newTS):EjecutarBloque([instruccion.OperacionInicial],newTS)
+    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
-        while(ExpBool.Valor){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,ts):EjecutarBloque([instruccion.Instrucciones],ts)
-            Array.isArray(instruccion.ExpresionPaso)?EjecutarBloque(instruccion.ExpresionPaso,ts):EjecutarBloque([instruccion.ExpresionPaso],ts)
-            ExpBool = ejecutarValor(instruccion.ExpresionLogica,ts)
+        try{
+            while(ExpBool.Valor){
+                if(instruccion.Instrucciones!==undefined){
+                    try{    
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    }
+                    catch(e){
+                        if(e instanceof Continue){console.log("CONTINUE!")}
+                        else{throw e}
+                    }
+                }
+                Array.isArray(instruccion.ExpresionPaso)?EjecutarBloque(instruccion.ExpresionPaso,newTS):EjecutarBloque([instruccion.ExpresionPaso],newTS)
+                ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
+            }
+        }
+        catch(e){
+            if(e instanceof Break){console.log("BREAK!")}
         }
     }
     else{
         throw Error("Error al evaluar expresion booleana")
+    }
+}
+
+/**
+ * Ejecuta una sentencia For-Of
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function ForOfExecute(instruccion,ts){
+    let newTS = new TablaSimbolos(ts.simbolos); 
+    EjecutarBloque([instruccion.AuxVar],newTS)
+    //Se obtiene varible sobre cual iterar
+    let aux = newTS.simbolos[newTS.simbolos.length-1]
+    //Se obtiene variable a iterar
+    let aux2 = ejecutarValor(instruccion.Var,newTS)
+    let cont=0;
+    if(Array.isArray(aux2.Valor)){
+        
+        while(aux2.Valor[cont]!==undefined){
+            newTS.actualizar(aux.ID,aux2.Valor[cont])
+            if(instruccion.Instrucciones!==undefined){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+            }
+            cont++
+        }
+    }
+    else{
+        throw Error(aux2.ID+" no es una varibale iterable")
+    }
+}
+
+/**
+ * Ejecuta una sentencia For-In
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function ForInExecute(instruccion,ts){
+    let newTS = new TablaSimbolos(ts.simbolos); 
+    EjecutarBloque([instruccion.AuxVar],newTS)
+    //Se obtiene varible sobre cual iterar
+    let aux = newTS.simbolos[newTS.simbolos.length-1]
+    //Se obtiene variable a iterar
+    let aux2 = ejecutarValor(instruccion.Var,newTS)
+    let cont=0;
+    if(Array.isArray(aux2.Valor)){
+        while(aux2.Valor[cont]!==undefined){
+            newTS.actualizar(aux.ID,{Tipo:Tipo_Valor.NUMBER,Valor:cont})
+            if(instruccion.Instrucciones!==undefined){
+            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+            }
+            cont++
+        }
+    }
+    else{
+        throw Error(aux2.ID+" no es una varibale iterable")
     }
 }
 
@@ -369,8 +632,12 @@ function ejecutarValor(valor,ts){
     
     //Si es un arreglo
     if(Array.isArray(valor)){
+        //Si es un arreglo vacio
+        if(valor.length===0){
+            return {Valor:[],Tipo:"ARR"}
+        }
         //Si es un arreglo de un type
-        if(valor[0].ID!==undefined){
+        else if(valor[0].ID!==undefined){
             //Se crea objeto
             return crearObjeto(valor,ts)
         }
@@ -680,4 +947,16 @@ function crearObjeto(valor,ts){
         throw Error("El type que se desea declarar no existe")
     }
 
+}
+
+//FUNCIOES DE SENTENCIAS DE TRANSFERENCIA
+
+function Break(message) {
+    this.name = 'Break';
+    this.message = message;
+}
+
+function Continue(message) {
+    this.name = 'Continue';
+    this.message = message;
 }
