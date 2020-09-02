@@ -1,3 +1,5 @@
+
+
 // Tipos de Operaciones
 const Tipo_Operacion = {
     //Aritmetica
@@ -78,7 +80,7 @@ const Tipo_Valor = {
 }
 
 let ErroresLexicos=[];
-let ErroresSintacticos=[];
+
 
 
 const AST_Tools = {
@@ -117,7 +119,6 @@ const AST_Tools = {
 		return {
             AST: sentencias,
 			ErroresLexicos:ErroresLexicos,
-			ErroresSintacticos:ErroresSintacticos
 		}
     },
 
@@ -598,22 +599,9 @@ const Manejo_Errores = {
     },
 
     /**
-    * Añade un nuevo error Sintactico
-	*/
-	addErrorSintactico:function(error,fila,columa){
-		ErroresSintacticos.push(
-		{
-			Error:error,
-			Fila:fila,
-			Columna:columa
-		});
-	},
-
-    /**
      * Limpia los arreglos de errores
      */
     resetErrors:function(){
-		ErroresSintacticos=[];
         ErroresLexicos=[];
 	}
 
@@ -625,4 +613,3 @@ module.exports.Tipo_Valor = Tipo_Valor;
 module.exports.AST_Tools = AST_Tools;
 module.exports.Manejo_Errores = Manejo_Errores;
 module.exports.ErroresLexicos = ErroresLexicos;
-module.exports.ErroresSintacticos = ErroresSintacticos;

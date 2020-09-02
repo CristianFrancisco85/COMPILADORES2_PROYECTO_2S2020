@@ -174,7 +174,6 @@ function TraducirBloque(Instrucciones,PuntoComa,TS){
         else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION){
             Code+=FunToString(instruccion,TS);
         }
-        //----
         else if(instruccion.Tipo===Tipo_Instruccion.GRAFICAR){
             Code+="graficar_ts();\n";
             console.log(TS.simbolos)
@@ -480,7 +479,7 @@ function FunToString(instruccion,TS){
         TempFunciones.forEach(element => {
             element.Padre=instruccion.ID
             element.ID=instruccion.ID+"_"+element.ID
-            TempTxt+=FunToString(element)
+            TempTxt+=FunToString(element,newTS)
         });
     }   
 

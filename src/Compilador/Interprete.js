@@ -2,7 +2,6 @@ import { Tipo_Instruccion } from './Instrucciones.js';
 import { Tipo_Operacion } from './Instrucciones.js';
 import { Tipo_Valor } from './Instrucciones.js';
 import { Console } from '../scripts/mainScript.js';
-import { includes, stubTrue } from 'lodash';
 
 const _ = require('lodash')
 
@@ -215,15 +214,23 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             throw new Break()
         }
         else if(instruccion.Tipo===Tipo_Instruccion.RETURN){
-            
+            if(instruccion.Valor!==undefined){
+                throw new Return(ejecutarValor(instruccion.Valor,TablaSimbolos))
+            }
+            else{
+                throw new Return(null)
+            }
         }
         else if(instruccion.OpTipo===Tipo_Operacion.DECREMENTO||instruccion.OpTipo===Tipo_Operacion.INCREMENTO){
             IncDecExecute(instruccion,TablaSimbolos)
         }
+        else if(instruccion.OpTipo===Tipo_Operacion.ATRIBUTO){
+            ejecutarValor(instruccion,TablaSimbolos)
+        }
 
     }
     catch(e){
-        if(e instanceof Break || e instanceof Continue){
+        if(e instanceof Break || e instanceof Continue || e instanceof Return){
             throw e
         }
         Console.setValue(Console.getValue()+"[ERROR]:\t"+e.message+"\n")
@@ -241,6 +248,56 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
  */
 function ConsoleExecute(instruccion,ts){
     Console.setValue(Console.getValue()+"[LOG]:\t"+ejecutarValor(instruccion.Valor,ts).Valor+"\n")
+}
+
+/**
+ * Ejecuta la llamada de una funcion
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
+function FunCallExecute(instruccion,ts){
+    //Se obtiene funcion
+    let fun = ejecutarValor(instruccion.ID,ts)
+    //Se obtiene tipos de lista de parametros
+    let aux=[]
+    let aux2=[]
+    let newTS= new TablaSimbolos(ts.simbolos)
+    instruccion.Params.forEach(element => {
+        aux.push(ejecutarValor(element.Valor,ts).Tipo)
+    });
+    fun.Valor.Parametros.forEach(element => {
+        aux2.push(element.Tipo)
+    });
+    //Se comparan
+    if(_(aux).differenceWith(aux2, _.isEqual).isEmpty()){
+        fun.Valor.Parametros.forEach((element,index) => {
+            newTS.nuevoSimbolo(element.ID,element.Tipo,ejecutarValor(instruccion.Params[index].Valor,newTS).Valor,"LET")
+        });
+        try{
+        Array.isArray(fun.Valor.Instrucciones)?EjecutarBloque(fun.Valor.Instrucciones,newTS):EjecutarBloque([fun.Valor.Instrucciones],newTS)
+        }
+        catch(e){
+            if(e instanceof Return){
+                console.log("RETURN!")
+                if(e.Valor===null){
+                    if(fun.Tipo==="VOID"){
+                        return e.Valor
+                    }
+                    throw Error("Funcion "+fun.ID+" no puede retornar "+e.Valor)
+                }
+                else if(e.Valor.Tipo===fun.Tipo){
+                    return e.Valor
+                }
+                else{
+                    throw Error("Funcion "+fun.ID+" no puede retornar "+e.Valor.Tipo)
+                }
+            }
+            else{throw e}
+        }
+    }
+    else{
+        throw Error("Error en parametros de llamada a "+fun.ID)
+    }
 }
 
 //SENTENCIAS DE DECLARACION Y ASIGNACION
@@ -429,10 +486,9 @@ function FunDecExecute(instruccion,ts){
     let aux={
         Parametros:instruccion.Parametros,
         Instrucciones:instruccion.Instrucciones,
-        TipoRetorno:instruccion.TipoRetorno
     }
 
-    ts.nuevoSimbolo(instruccion.ID,undefined,aux,"FUNCTION")
+    ts.nuevoSimbolo(instruccion.ID,instruccion.TipoRetorno,aux,"FUNCTION")
 
 }
 
@@ -495,17 +551,30 @@ function SwitchExecute(instruccion,ts){
 function WhileExecute(instruccion,ts){
     let newTS = new TablaSimbolos(ts.simbolos); 
     let ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS) 
+ 
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
-        while(ExpBool.Valor){
-            if(instruccion.Instrucciones!==undefined){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+        try{
+            while(ExpBool.Valor){
+                if(instruccion.Instrucciones!==undefined){
+                    try{    
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    }
+                    catch(e){
+                        if(e instanceof Continue){console.log("CONTINUE!")}
+                        else{throw e}
+                    }
+                }
+                ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
             }
-            ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
+        }
+        catch(e){
+            if(e instanceof Break){console.log("BREAK!")}
         }
     }
     else{
         throw Error("Error al evaluar expresion booleana")
     }
+    
 }
 
 /**
@@ -514,22 +583,31 @@ function WhileExecute(instruccion,ts){
  * @param {*} ts 
  */
 function DoWhileExecute(instruccion,ts){
-    let newTS = new TablaSimbolos(ts.simbolos); 
-    if(instruccion.Instrucciones!==undefined){
-    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
-    }
-    let ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS) 
-    if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
-        while(ExpBool.Valor){
+    let newTS = new TablaSimbolos(ts.simbolos);
+    let ExpBool 
+    try{
+        do{
             if(instruccion.Instrucciones!==undefined){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                try{    
+                Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                }
+                catch(e){
+                    if(e instanceof Continue){console.log("CONTINUE!")}
+                    else{throw e}
+                }
             }
             ExpBool = ejecutarValor(instruccion.ExpresionLogica,newTS)
-        }
+            if(ExpBool.Tipo!==Tipo_Valor.BOOLEAN){
+                throw Error("Error al evaluar expresion booleana")
+            }
+        }while(ExpBool.Valor)
     }
-    else{
-        throw Error("Error al evaluar expresion booleana")
+    catch(e){
+        if(e instanceof Break){console.log("BREAK!")}
+        else{throw e}
     }
+    
+
 }
 
 /**
@@ -580,13 +658,23 @@ function ForOfExecute(instruccion,ts){
     let aux2 = ejecutarValor(instruccion.Var,newTS)
     let cont=0;
     if(Array.isArray(aux2.Valor)){
-        
-        while(aux2.Valor[cont]!==undefined){
-            newTS.actualizar(aux.ID,aux2.Valor[cont])
-            if(instruccion.Instrucciones!==undefined){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+        try{
+            while(aux2.Valor[cont]!==undefined){
+                newTS.actualizar(aux.ID,aux2.Valor[cont])
+                if(instruccion.Instrucciones!==undefined){
+                    try{    
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    }
+                    catch(e){
+                        if(e instanceof Continue){console.log("CONTINUE!")}
+                        else{throw e}
+                    }
+                }
+                cont++
             }
-            cont++
+        }
+        catch(e){
+            if(e instanceof Break){console.log("BREAK!")}
         }
     }
     else{
@@ -608,12 +696,23 @@ function ForInExecute(instruccion,ts){
     let aux2 = ejecutarValor(instruccion.Var,newTS)
     let cont=0;
     if(Array.isArray(aux2.Valor)){
-        while(aux2.Valor[cont]!==undefined){
-            newTS.actualizar(aux.ID,{Tipo:Tipo_Valor.NUMBER,Valor:cont})
-            if(instruccion.Instrucciones!==undefined){
-            Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+        try{
+            while(aux2.Valor[cont]!==undefined){
+                newTS.actualizar(aux.ID,{Tipo:Tipo_Valor.NUMBER,Valor:cont})
+                if(instruccion.Instrucciones!==undefined){
+                    try{    
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    }
+                    catch(e){
+                        if(e instanceof Continue){console.log("CONTINUE!")}
+                        else{throw e}
+                    }
+                }
+                cont++
             }
-            cont++
+        }
+        catch(e){
+            if(e instanceof Break){console.log("BREAK!")}
         }
     }
     else{
@@ -655,13 +754,17 @@ function ejecutarValor(valor,ts){
     else if(valor.Valor!==undefined&&valor.Tipo===Tipo_Valor.ID){      
         return ts.getValor(valor.Valor)
     }
+    //Si es null
+    else if(valor.Valor!==undefined&&valor.Tipo===Tipo_Valor.NULL){      
+        return null
+    }
     //Si es un id para operacion de atributo o acceso array
     else if(valor.Tipo===undefined&&valor.OpTipo===undefined){
         return ts.getValor(valor)
     }
     //Si es llamada de una funcion
     else if(valor.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
-        //FALTA
+        return FunCallExecute(valor,ts)
     }
     //Si hay una operacion
     else if(valor.OpTipo!==undefined){
@@ -839,7 +942,22 @@ function ejecutarOperacionBinaria(valor,ts){
                         return OpIzq[ejecutarValor(OpDer.OpDer,ts).Valor]
                     }
                 }
+                //Si se llama a funcion pop o push
+                else if(OpDer.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
+                    if(OpDer.ID==="push"){
+                        OpIzq.push(ejecutarValor(OpDer.Params[0].Valor,ts))
+                        return {Valor:OpIzq.length,Tipo:Tipo_Valor.NUMBER}
+                    }
+                    else if(OpDer.ID==="pop"){
+                        return OpIzq.pop()
+                    }
+                    else{
+                        throw Error("No se puede acceder a una funcion de un objeto");
+                    }
+                }
+                //Si se accede a un atributo
                 else{
+                    //Si es a propieda lenght
                     if(OpDer==="length"){
                         if(Array.isArray(OpIzq)){
                             return {Valor:OpIzq[OpDer],Tipo:Tipo_Valor.NUMBER}
@@ -848,13 +966,14 @@ function ejecutarOperacionBinaria(valor,ts){
                             return OpIzq[OpDer]
                         }
                     }
+                    //Si es a un atributo
                     else{
                         return OpIzq[OpDer]
                     }
                 }
             }
             else{
-                throw Error("No se puede a objeto porque no existe");
+                throw Error("No se puede aceeder a objeto porque no existe");
             }
         case Tipo_Operacion.ACCESO_ARR:
             if(Array.isArray(OpIzq)){
@@ -951,12 +1070,15 @@ function crearObjeto(valor,ts){
 
 //FUNCIOES DE SENTENCIAS DE TRANSFERENCIA
 
-function Break(message) {
+function Break() {
     this.name = 'Break';
-    this.message = message;
 }
 
-function Continue(message) {
+function Continue() {
     this.name = 'Continue';
-    this.message = message;
+}
+
+function Return(valor) {
+    this.name = 'Return';
+    this.Valor=valor
 }

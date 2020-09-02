@@ -1,10 +1,21 @@
 import {Traducir, ReturnAST} from '../Compilador/Traductor.js';
 import {Ejecutar} from '../Compilador/Interprete.js'
-const parser = require('../Compilador/Gramatica.js');
+const parser = require('../Compilador/Gramatica.js').parser;
 
+let ErroresSintacticos=[];
 export let CodeTxt="",TraduccionTxt="";
 export let Viewer,Console
 let AST
+
+parser.yy.parseError = function(msg, hash) {
+    ErroresSintacticos.push(
+		{
+			Error:hash.text,
+			Fila:hash.line,
+			Columna:hash.loc.first_column
+		}); 
+    console.log('No se esperaba "'+hash.token+'" en linea '+hash.line); 
+}
 
 export function setCode(text){
     CodeTxt=text
@@ -37,12 +48,12 @@ export function translate(){
         if(AST.ErroresLexicos.length>0){
             setErrorLexico(AST.ErroresLexicos)
         }
-        if(AST.ErroresSintacticos.length>0){
-            setErrorSintactico(AST.ErroresSintacticos)
+        if(ErroresSintacticos.length>0){
+            setErrorSintactico(ErroresSintacticos)
         }
     } 
     catch (e) {
-        console.error(e);
+        console.error(e.message);
     }
 }
 export function execute(){
@@ -57,7 +68,7 @@ export function execute(){
     if(AST.ErroresLexicos.length>0){
         setErrorLexico(AST.ErroresLexicos)
     }
-    if(AST.ErroresSintacticos.length>0){
+    if(ErroresSintacticos.length>0){
         setErrorSintactico(AST.ErroresSintacticos)
     }
     AST=undefined
@@ -67,22 +78,22 @@ export function execute(){
     }
 }
 
-function setErrorLexico(ErroresLexicos){
-    for(var i=0;i<ErroresLexicos.length;i++){
+function setErrorLexico(Errores){
+    for(var i=0;i<Errores.length;i++){
         var texto=document.createElement("p");
-        texto.innerHTML="Error Lexico "+ErroresLexicos[i].Error+
-        " en fila "+ErroresLexicos[i].Fila+" y columna "+ErroresLexicos[i].Columna;
+        texto.innerHTML="Caracter invalido "+Errores[i].Error+
+        " en fila "+Errores[i].Fila+" y columna "+Errores[i].Columna;
         document.getElementById("Lexicos").appendChild(texto);
     }
 }
-
-function setErrorSintactico(ErroresSintacticos){
-    for(var i=0;i<ErroresSintacticos.length;i++){
+function setErrorSintactico(Errores){
+    for(var i=0;i<Errores.length;i++){
         var texto=document.createElement("p");
-        texto.innerHTML="Error sintactico "+ErroresSintacticos[i].Error+
-        " en fila "+ErroresSintacticos[i].Fila+" y columna "+ErroresSintacticos[i].Columna
+        texto.innerHTML="No se esperaba "+Errores[i].Error+
+        " en fila "+Errores[i].Fila+" y columna "+Errores[i].Columna
         document.getElementById("Sintacticos").appendChild(texto);
     }
+    ErroresSintacticos=[]
 }
 
 

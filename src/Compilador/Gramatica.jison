@@ -143,7 +143,7 @@ instruccion
     | declaracionFuncion                                    {$$=$1}
     | GRAFICAR PARIZQ PARDER PUNTOYCOMA                     {$$=AST_Tools.nuevoGraficar();}
     | CONSOLE PUNTO LOG PARIZQ expresion PARDER PUNTOYCOMA  {$$=AST_Tools.nuevaSalida($5)}
-    | error PUNTOYCOMA                                      {Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);$$=undefined; }           
+    | error PUNTOYCOMA                                      {$$=undefined; }           
 ;
 
 /*DECLARACIONES, ASIGNACIONES Y EXPRESIONES*/

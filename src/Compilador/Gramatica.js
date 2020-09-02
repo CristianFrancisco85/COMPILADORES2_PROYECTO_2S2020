@@ -108,7 +108,7 @@ case 22:
 this.$=AST_Tools.nuevaSalida($$[$0-2])
 break;
 case 23:
-Manejo_Errores.addErrorSintactico(yytext,this._$.first_line,this._$.first_column);this.$=undefined; 
+this.$=undefined; 
 break;
 case 24:
 this.$=AST_Tools.declaracion_let($$[$0-1])
