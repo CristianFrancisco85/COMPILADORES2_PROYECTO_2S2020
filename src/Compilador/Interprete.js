@@ -172,7 +172,7 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             ArrayMasAsigExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
-            
+            FunCallExecute(instruccion,TablaSimbolos);
         }
         else if(instruccion.Tipo===Tipo_Instruccion.SALIDA){
             ConsoleExecute(instruccion,TablaSimbolos)
@@ -425,22 +425,41 @@ function ArrayAsigExecute(instruccion,ts){
         throw Error("No se puede asignar "+aux.ID+" porque es una constante ")
     }
     //Se obtiene nuevo valor
-    let newVal = ejecutarValor(instruccion.Valor,ts) 
-
+    let newVal = JSON.parse(JSON.stringify(ejecutarValor(instruccion.Valor,ts))) 
+    
     //Se obtiene referencia a la posicion
+    let posVal1,posVal2;
     if(instruccion.Posicion2!==undefined){
-        aux=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)].Valor[Number(ejecutarValor(instruccion.Posicion2,ts).Valor)]
+        //Se obtiene primera posicion
+        posVal1=aux.Valor[ejecutarValor(instruccion.Posicion,ts).Valor]
+        //Se obtiene segunda posicion
+        posVal2=posVal1.Valor[ejecutarValor(instruccion.Posicion2,ts).Valor]
+        
+        if(posVal2!==undefined){
+            posVal2.Valor=newVal.Valor
+        }
+        else{
+            aux.Valor[ejecutarValor(instruccion.Posicion,ts).Valor].Valor[ejecutarValor(instruccion.Posicion2,ts).Valor]=newVal
+        }
     }
     else{
-        aux=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)]
+        posVal1=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)]
+        //Si la posicion es undefined
+        if(posVal1===undefined){
+            aux.Valor[ejecutarValor(instruccion.Posicion,ts).Valor]=newVal
+        }
+        else{
+            posVal1=newVal
+        }
     }
+
     //Se verifican tipos
-    if(aux.Tipo===newVal.Tipo){
+    /*if(aux.Tipo===newVal.Tipo||(aux.Tipo.includes("ARR")&&newVal.Tipo.includes("ARR"))){
         aux.Valor=newVal.Valor
     }
     else{
         throw Error("No se puede asignar "+newVal.Tipo+" en un array tipo "+aux.Tipo)
-    }
+    }*/
 
 }
 
