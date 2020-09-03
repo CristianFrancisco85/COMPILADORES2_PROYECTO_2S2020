@@ -73,7 +73,7 @@ class TablaSimbolos {
 
         if (simbolo!==undefined) {
 
-            if(simbolo.Tipo===valor.Tipo||simbolo.Tipo===undefined){
+            if(simbolo.Tipo===valor.Tipo||simbolo.Tipo===undefined||valor.Tipo===Tipo_Valor.NULL){
                 simbolo.Valor=valor.Valor
                 simbolo.Tipo=valor.Tipo
             }
@@ -132,10 +132,11 @@ class TablaSimbolos {
     }
 }
 
+let Global
 export function Ejecutar(ast){
     //Tabla de simbolos Global
     Console.setValue("")
-    let Global = new TablaSimbolos([])
+    Global=new TablaSimbolos([])
     EjecutarBloque(ast,Global)
     console.log(Global.getsimbolos());
 
@@ -172,7 +173,7 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
             ArrayMasAsigExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
-            FunCallExecute(instruccion,TablaSimbolos);
+            FunCallExecute(instruccion,TablaSimbolos,Global);
         }
         else if(instruccion.Tipo===Tipo_Instruccion.SALIDA){
             ConsoleExecute(instruccion,TablaSimbolos)
@@ -255,23 +256,36 @@ function ConsoleExecute(instruccion,ts){
  * @param {*} instruccion 
  * @param {*} ts 
  */
-function FunCallExecute(instruccion,ts){
+function FunCallExecute(instruccion,ts,Global){
     //Se obtiene funcion
     let fun = ejecutarValor(instruccion.ID,ts)
     //Se obtiene tipos de lista de parametros
     let aux=[]
     let aux2=[]
-    let newTS= new TablaSimbolos(ts.simbolos)
+    let newTS= new TablaSimbolos(Global.simbolos)
     instruccion.Params.forEach(element => {
         aux.push(ejecutarValor(element.Valor,ts).Tipo)
     });
     fun.Valor.Parametros.forEach(element => {
         aux2.push(element.Tipo)
     });
-    //Se comparan
-    if(_(aux).differenceWith(aux2, _.isEqual).isEmpty()){
+    //Se comparan 
+    let bool=false
+    if(aux.length===aux2.length){
+        for(let index in aux){
+            if(aux[index]===aux2[index]||aux[index]===Tipo_Valor.NULL){
+                bool=true;
+            }
+            else{
+                bool=false
+                break
+            }
+        }
+    }
+
+    if(bool){
         fun.Valor.Parametros.forEach((element,index) => {
-            newTS.nuevoSimbolo(element.ID,element.Tipo,ejecutarValor(instruccion.Params[index].Valor,newTS).Valor,"LET")
+            newTS.nuevoSimbolo(element.ID,element.Tipo,ejecutarValor(instruccion.Params[index].Valor,ts).Valor,"LET")
         });
         try{
         Array.isArray(fun.Valor.Instrucciones)?EjecutarBloque(fun.Valor.Instrucciones,newTS):EjecutarBloque([fun.Valor.Instrucciones],newTS)
@@ -367,8 +381,12 @@ function AsigExecute(instruccion,ts){
     }
     //Se obtiene valor a asignar
     let aux2 = ejecutarValor(instruccion.Valor,ts)
-    if(aux.Tipo===aux2.Tipo){
+    if(aux.Tipo===aux2.Tipo||aux2.Tipo===Tipo_Valor.NULL){
         aux.Valor=aux2.Valor
+    }
+    else if(aux.Tipo===Tipo_Valor.NULL){
+        aux.Valor=JSON.parse(JSON.stringify(aux2.Valor))
+        aux.Tipo=JSON.parse(JSON.stringify(aux2.Tipo))
     }
     else{
         throw Error("No se puede asignar "+aux2.Tipo+" a "+aux.Tipo)
@@ -378,7 +396,7 @@ function AsigExecute(instruccion,ts){
 }
 
 /**
- * Ejecuta una sentencia de asignacion
+ * Ejecuta una sentencia de incremento o decremento
  * @param {*} instruccion 
  * @param {*} ts 
  */
@@ -403,7 +421,7 @@ function MasAsigExecute(instruccion,ts){
     let aux = ejecutarValor(instruccion.ID,ts)
     //Se obtiene valor a asignar
     let aux2 = ejecutarValor(instruccion.Valor,ts)
-    if(aux.Tipo===aux2.Tipo){
+    if(aux.Tipo===aux2.Tipo||aux.Tipo===Tipo_Valor.NULL){
         aux.Valor+=aux2.Valor
     }
     else{
@@ -766,7 +784,10 @@ function ejecutarValor(valor,ts){
         
     }
     //Si no hay operandos y no es un ID
-    else if(valor.Valor!==undefined&&valor.Tipo!==Tipo_Valor.ID){      
+    else if(valor.Valor!==undefined&&valor.Tipo!==Tipo_Valor.ID){
+        if(valor.Tipo===Tipo_Valor.STRING){
+            return procesarCadena(valor)
+        }      
         return valor
     }
     //Si no hay operandos y es un ID
@@ -783,7 +804,7 @@ function ejecutarValor(valor,ts){
     }
     //Si es llamada de una funcion
     else if(valor.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
-        return FunCallExecute(valor,ts)
+        return FunCallExecute(valor,ts,Global)
     }
     //Si hay una operacion
     else if(valor.OpTipo!==undefined){
@@ -806,6 +827,8 @@ function ejecutarOperacionBinaria(valor,ts){
     if(valor.OpDer!==undefined&&valor.OpTipo!==Tipo_Operacion.ATRIBUTO){
     OpDer=ejecutarValor(valor.OpDer,ts)
     }
+    if(OpIzq===null){OpIzq={Valor:null,Tipo:Tipo_Valor.NULL}}
+    if(OpDer===null){OpDer={Valor:null,Tipo:Tipo_Valor.NULL}}
     
     switch(valor.OpTipo){
 
@@ -886,43 +909,45 @@ function ejecutarOperacionBinaria(valor,ts){
                 return {Valor:Number(OpIzq.Valor)>Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("No se puede > "+OpIzq.Tipo+" con "+OpDer.Tipo)
-            }
+                return {Valor:OpIzq.Valor>OpDer.Valor,Tipo:Tipo_Valor.BOOLEAN}
+            }  
         case Tipo_Operacion.MENOR_QUE:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)<Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("No se puede < "+OpIzq.Tipo+" con "+OpDer.Tipo)
-            }
+                return {Valor:OpIzq.Valor<OpDer.Valor,Tipo:Tipo_Valor.BOOLEAN}
+            }  
         case Tipo_Operacion.MAYOR_IGUAL:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)>=Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("No se puede >= "+OpIzq.Tipo+" con "+OpDer.Tipo)
-            }
+                return {Valor:OpIzq.Valor>=OpDer.Valor,Tipo:Tipo_Valor.BOOLEAN}
+            }  
         case Tipo_Operacion.MENOR_IGUAL:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)<=Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("No se puede <= "+OpIzq.Tipo+" con "+OpDer.Tipo)
-            }
+                return {Valor:OpIzq.Valor<=OpDer.Valor,Tipo:Tipo_Valor.BOOLEAN}
+            }  
         case Tipo_Operacion.DOBLE_IGUAL:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)===Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("No se puede == "+OpIzq.Tipo+" con "+OpDer.Tipo)
-            }
+                return {Valor:OpIzq.Valor===OpDer.Valor,Tipo:Tipo_Valor.BOOLEAN}
+            }    
+            //throw new Error("No se puede == "+OpIzq.Tipo+" con "+OpDer.Tipo)
         case Tipo_Operacion.NO_IGUAL:
             if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.NUMBER){
                 return {Valor:Number(OpIzq.Valor)!==Number(OpDer.Valor),Tipo:Tipo_Valor.BOOLEAN}
             }
             else{
-                throw new Error("No se puede != "+OpIzq.Tipo+" con "+OpDer.Tipo)
+                return {Valor:OpIzq.Valor!==OpDer.Valor,Tipo:Tipo_Valor.BOOLEAN}
             }
+            //throw new Error("No se puede != "+OpIzq.Tipo+" con "+OpDer.Tipo)
         case Tipo_Operacion.AND:
             if(OpIzq.Tipo===Tipo_Valor.BOOLEAN && OpDer.Tipo===Tipo_Valor.BOOLEAN){
                 return {Valor:OpIzq.Valor && OpDer.Valor ,Tipo:Tipo_Valor.BOOLEAN}
@@ -987,6 +1012,9 @@ function ejecutarOperacionBinaria(valor,ts){
                     }
                     //Si es a un atributo
                     else{
+                        if(OpIzq===null){
+                            return null
+                        }
                         return OpIzq[OpDer]
                     }
                 }
@@ -1064,19 +1092,31 @@ function crearObjeto(valor,ts){
         return simb.Tipo2==="TYPE";
     });
 
-    //Arreglo auxiliar para comparar con types
+    //Arreglos auxiliar para comparar con types
     let auxArr=[]
+    let auxArr2
 
+    //Se crea objeto
     valor.forEach((element, index, arr) => {
-        auxArr.push({ID:element.ID,Tipo:ejecutarValor(element.Valor,ts).Tipo})
+        auxArr.push(element.ID)
         Temp[element.ID]=ejecutarValor(element.Valor,ts)
     });
 
-    typesArr.forEach((element, index, arr) => {       
-        if(_(element.Valor).differenceWith(auxArr, _.isEqual).isEmpty()){
-            Temp = {Valor:Temp,Tipo:element.ID}
+    //Se infiere Type
+    for(let element of typesArr){
+        auxArr2=[]
+        for(let id of element.Valor){
+            auxArr2.push(id.ID);
         }
-    });
+
+        if(_.isEqual(_.sortBy(auxArr), _.sortBy(auxArr2))){
+            Temp = {Valor:Temp,Tipo:element.ID}
+            break;
+        }
+    }
+
+    //Se comprueban tipos
+    
 
     if(Temp.Tipo!==undefined){
         return Temp
@@ -1085,6 +1125,16 @@ function crearObjeto(valor,ts){
         throw Error("El type que se desea declarar no existe")
     }
 
+}
+
+/**
+ * Da formato de cadena 
+ * @param {*} valor 
+ */
+function procesarCadena(valor){
+    //valor.valor=valor.Valor.replace("t","n");
+    //console.log(valor.Valor)
+    return valor
 }
 
 //FUNCIOES DE SENTENCIAS DE TRANSFERENCIA

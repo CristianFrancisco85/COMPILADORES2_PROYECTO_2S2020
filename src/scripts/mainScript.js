@@ -69,7 +69,7 @@ export function execute(){
         setErrorLexico(AST.ErroresLexicos)
     }
     if(ErroresSintacticos.length>0){
-        setErrorSintactico(AST.ErroresSintacticos)
+        setErrorSintactico(ErroresSintacticos)
     }
     AST=undefined
     }
