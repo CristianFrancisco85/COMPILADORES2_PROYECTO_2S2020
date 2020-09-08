@@ -1,7 +1,7 @@
 import { Tipo_Instruccion } from './Instrucciones.js';
 import { Tipo_Operacion } from './Instrucciones.js';
 import { Tipo_Valor } from './Instrucciones.js';
-
+import {Simbolos} from '../scripts/mainScript.js'
 
 const _ = require('lodash')
 
@@ -176,7 +176,7 @@ function TraducirBloque(Instrucciones,PuntoComa,TS){
         }
         else if(instruccion.Tipo===Tipo_Instruccion.GRAFICAR){
             Code+="graficar_ts();\n";
-            console.log(TS.simbolos)
+            Simbolos.push(TS.simbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.CONTINUE){
             Code+="continue;\n";
@@ -468,6 +468,7 @@ function FunToString(instruccion,TS){
             if(arr[index+1]===undefined){}else{TempTxt+=","}
         });
     }   
+    TS.nuevoSimbolo(instruccion.ID,traducirTipo(instruccion.TipoRetorno),"FUNCTION")
     TempTxt+="):"+traducirTipo(instruccion.TipoRetorno)+"{\n"
     if(instruccion.Instrucciones!==undefined){TempTxt+=TraducirBloque(instruccion.Instrucciones,undefined,newTS)}
     TempTxt+="}\n"
@@ -625,7 +626,7 @@ function traducirOperacionBinaria(valor){
  * Traduce una lista de array 
  * @param {*} array 
  */
-function traducirArray(array){
+export function traducirArray(array){
     let TempTxt="[";
     array.forEach((element, index, arr) => {
         TempTxt+=traducirValor(element.Valor)
@@ -639,7 +640,7 @@ function traducirArray(array){
  * Traduce un array de atributos de un type
  * @param {*} array 
  */
-function traducirAttrib(array){
+export function traducirAttrib(array){
     let TempTxt="{";
     array.forEach((element, index, arr) => {
         TempTxt+=element.ID
@@ -686,6 +687,4 @@ function traducirCasos(array,ts){
     });
     return TempTxt;
 }
-
-
 

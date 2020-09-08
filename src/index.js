@@ -1,5 +1,5 @@
 //Importaciones Default
-import React, {useEffect} from 'react';
+import React, {useState} from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
@@ -20,12 +20,13 @@ import Popper from 'popper.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 //Importaciones de funciones de JS
-import {setCode} from './scripts/mainScript.js'
+import {setCode, Simbolos, Simbolos2} from './scripts/mainScript.js'
 import {setLC} from './scripts/mainScript.js'
 import {setViewer} from './scripts/mainScript.js'
 import {setConsole} from './scripts/mainScript.js'
 import {translate} from './scripts/mainScript.js'
 import {execute} from './scripts/mainScript.js'
+import TablaSimbolos from './components/TablaSimbolos/TablaSimbolos';
 
 
 //Creacion de areas de codigo
@@ -83,7 +84,6 @@ function Viewer(){
      />
    </div>
 )}
-
 
 //Creacion de Botones
 function BtnTranslate(){
@@ -146,9 +146,13 @@ function MainComponent(){
         </div>
       </div>
 
+      <TablaSimbolos Arr={Simbolos} Title="Traduccion"></TablaSimbolos>
+      <TablaSimbolos Arr={Simbolos2} Title="Ejecucion"></TablaSimbolos>
+
     </div>
     
   );
+
 }
 
 

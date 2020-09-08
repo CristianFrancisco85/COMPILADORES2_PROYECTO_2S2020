@@ -1,10 +1,13 @@
 import {Traducir, ReturnAST} from '../Compilador/Traductor.js';
 import {Ejecutar} from '../Compilador/Interprete.js'
 const parser = require('../Compilador/Gramatica.js').parser;
+const _ = require('lodash')
 
 let ErroresSintacticos=[];
 export let CodeTxt="",TraduccionTxt="";
 export let Viewer,Console
+export let Simbolos=[]
+export let Simbolos2=[]
 let AST
 
 parser.yy.parseError = function(msg, hash) {
@@ -31,50 +34,63 @@ export function setConsole(editor){
     Console=editor
 }
 export function translate(){
-    document.getElementById("Lexicos").innerHTML=""
-    document.getElementById("Sintacticos").innerHTML=""
     try {
         //AST ORIGINAL
         AST = parser.parse(CodeTxt.toString());
-        console.log(JSON.stringify(AST,null,2));
-
         //Salida de Traduccion
-        TraduccionTxt=Traducir(AST.AST);
+        TraduccionTxt=Traducir(JSON.parse(JSON.stringify(AST.AST)));
         Viewer.setValue(TraduccionTxt)
-
-        //AST DESANIDADO
-        AST.AST=ReturnAST();
+        AST.AST=ReturnAST()
         //console.log(JSON.stringify(AST,null,2));
+    } 
+    catch (e) {
+        console.error(e.message);
+    }
+    finally{
+        refreshErrores()
+    }
+}
+export function execute(){
+    try{
+
+    if(AST===undefined){
+        AST = parser.parse(CodeTxt.toString());
+        //Se comprueba por funciones anidadas
+        Traducir(JSON.parse(JSON.stringify(AST.AST)));
+        let aux = ReturnAST();
+        if(!(_.isEqual(JSON.parse(JSON.stringify(AST.AST)),JSON.parse(JSON.stringify(aux))))){
+            Console.setValue("[ERROR]: Hay funciones anidadas :o")
+            throw Error("Funciones anidadas")
+        }
+        else{
+            Ejecutar(aux)
+        }
+        
+    }
+    else{
+        Ejecutar(AST.AST)
+    }   
+    AST=undefined
+    }
+    catch(e){
+        console.error(e);
+    }
+    finally{
+        refreshErrores()
+    }
+}
+
+function refreshErrores(){
+    
+    document.getElementById("Lexicos").innerHTML=""
+    document.getElementById("Sintacticos").innerHTML=""
+    if(AST!==undefined){
         if(AST.ErroresLexicos.length>0){
             setErrorLexico(AST.ErroresLexicos)
         }
         if(ErroresSintacticos.length>0){
             setErrorSintactico(ErroresSintacticos)
         }
-    } 
-    catch (e) {
-        console.error(e.message);
-    }
-}
-export function execute(){
-    document.getElementById("Lexicos").innerHTML=""
-    document.getElementById("Sintacticos").innerHTML=""
-    try{
-    if(AST===undefined){
-        AST = parser.parse(CodeTxt.toString());
-    }
-    Ejecutar(AST.AST)
-
-    if(AST.ErroresLexicos.length>0){
-        setErrorLexico(AST.ErroresLexicos)
-    }
-    if(ErroresSintacticos.length>0){
-        setErrorSintactico(ErroresSintacticos)
-    }
-    AST=undefined
-    }
-    catch(e){
-        console.error(e);
     }
 }
 

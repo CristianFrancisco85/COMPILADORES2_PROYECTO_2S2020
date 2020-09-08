@@ -2,6 +2,7 @@ import { Tipo_Instruccion } from './Instrucciones.js';
 import { Tipo_Operacion } from './Instrucciones.js';
 import { Tipo_Valor } from './Instrucciones.js';
 import { Console } from '../scripts/mainScript.js';
+import {Simbolos2 as Simbolos} from '../scripts/mainScript.js'
 
 const _ = require('lodash')
 
@@ -137,27 +138,33 @@ export function Ejecutar(ast){
     //Tabla de simbolos Global
     Console.setValue("")
     Global=new TablaSimbolos([])
-    EjecutarBloque(ast,Global)
+    BuscarDec(ast,Global)
+    EjecutarBloque(ast,Global,true)
     console.log(Global.getsimbolos());
 
 }
 
-function EjecutarBloque(Instrucciones,TablaSimbolos){
+/**
+ * Ejecuta un bloque dado
+ * @param {*} Instrucciones 
+ * @param {*} TablaSimbolos 
+ * @param {*} Bool Indica si ignorar declaraciones o no
+ */
+function EjecutarBloque(Instrucciones,TablaSimbolos,Bool){
 
     Instrucciones.forEach(instruccion => {
 
     try{
-
         if(instruccion===undefined){
-            throw new Error("Intruccion Invalida")
+            //throw new Error("Intruccion Invalida")
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET&&Bool===undefined){
             LetDecExecute(instruccion,TablaSimbolos)
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST){
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST&&Bool===undefined){
             ConstDecExecute(instruccion,TablaSimbolos)
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE){
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE&&Bool===undefined){
             TypeDecExecute(instruccion,TablaSimbolos);
         }
         else if(instruccion.Tipo===Tipo_Instruccion.ASIGNACION){
@@ -202,11 +209,11 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
         else if(instruccion.Tipo===Tipo_Instruccion.BLOQUE_SWITCH){
             SwitchExecute(instruccion,TablaSimbolos)
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION){
+        else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION&&Bool===undefined){
             FunDecExecute(instruccion,TablaSimbolos)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.GRAFICAR){
-            Console.setValue(Console.getValue()+"[TABLA SIMBOLOS]:\t"+JSON.stringify(TablaSimbolos.simbolos)+"\n")
+            Simbolos.push(JSON.parse(JSON.stringify(TablaSimbolos.simbolos)))
         }
         else if(instruccion.Tipo===Tipo_Instruccion.CONTINUE){
             throw new Continue()
@@ -243,6 +250,38 @@ function EjecutarBloque(Instrucciones,TablaSimbolos){
 }
 
 /**
+ * Hace la primera pasada para econtrar declaraciones
+ * @param {*} Instrucciones 
+ * @param {*} TablaSimbolos 
+ */
+function BuscarDec(Instrucciones,TablaSimbolos){
+    Instrucciones.forEach(instruccion => {
+
+    try{
+        if(instruccion===undefined){
+            //throw new Error("Intruccion Invalida")
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
+            LetDecExecute(instruccion,TablaSimbolos)
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST){
+            ConstDecExecute(instruccion,TablaSimbolos)
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE){
+            TypeDecExecute(instruccion,TablaSimbolos);
+        }
+        else if(instruccion.Tipo===Tipo_Instruccion.DECL_FUNCION){
+            FunDecExecute(instruccion,TablaSimbolos)
+        }
+    }
+    catch(e){
+        console.error(e)
+    }
+
+    });
+}
+
+/**
  * Ejecuta una salida a consola
  * @param {*} instruccion 
  * @param {*} ts 
@@ -263,30 +302,34 @@ function FunCallExecute(instruccion,ts,Global){
     let aux=[]
     let aux2=[]
     let newTS= new TablaSimbolos(Global.simbolos)
-    instruccion.Params.forEach(element => {
-        aux.push(ejecutarValor(element.Valor,ts).Tipo)
-    });
-    fun.Valor.Parametros.forEach(element => {
-        aux2.push(element.Tipo)
-    });
-    //Se comparan 
     let bool=false
-    if(aux.length===aux2.length){
-        for(let index in aux){
-            if(aux[index]===aux2[index]||aux[index]===Tipo_Valor.NULL){
-                bool=true;
-            }
-            else{
-                bool=false
-                break
+    if(instruccion.Params!==undefined&&fun.Valor.Parametros!==undefined){
+        instruccion.Params.forEach(element => {
+            aux.push(ejecutarValor(element.Valor,ts).Tipo)
+        });
+        fun.Valor.Parametros.forEach(element => {
+            aux2.push(element.Tipo)
+        });
+        //Se comparan 
+        if(aux.length===aux2.length){
+            for(let index in aux){
+                if(aux[index]===aux2[index]||aux[index]===Tipo_Valor.NULL){
+                    bool=true;
+                }
+                else{
+                    bool=false
+                    break
+                }
             }
         }
-    }
-
+    }else{bool=true}
+    
     if(bool){
-        fun.Valor.Parametros.forEach((element,index) => {
-            newTS.nuevoSimbolo(element.ID,element.Tipo,ejecutarValor(instruccion.Params[index].Valor,ts).Valor,"LET")
-        });
+        if(fun.Valor.Parametros!==undefined){
+            fun.Valor.Parametros.forEach((element,index) => {
+                newTS.nuevoSimbolo(element.ID,element.Tipo,ejecutarValor(instruccion.Params[index].Valor,ts).Valor,"LET")
+            });
+        }
         try{
         Array.isArray(fun.Valor.Instrucciones)?EjecutarBloque(fun.Valor.Instrucciones,newTS):EjecutarBloque([fun.Valor.Instrucciones],newTS)
         }
@@ -328,7 +371,7 @@ function LetDecExecute(instruccion,ts){
         ts.nuevoSimbolo(element.ID,element.Tipo,undefined,"LET")
         //Se asigna si fuera el caso
         if(element.Valor!==undefined){
-            ts.actualizar(element.ID,JSON.parse(JSON.stringify(ejecutarValor(element.Valor,ts))))
+            ts.actualizar(element.ID,ejecutarValor(element.Valor,ts))
         }
 
     });
@@ -381,8 +424,13 @@ function AsigExecute(instruccion,ts){
     }
     //Se obtiene valor a asignar
     let aux2 = ejecutarValor(instruccion.Valor,ts)
-    if(aux.Tipo===aux2.Tipo||aux2.Tipo===Tipo_Valor.NULL){
+    if(aux.Tipo===aux2.Tipo||aux.Tipo===undefined){
         aux.Valor=aux2.Valor
+        aux.Tipo=aux2.Tipo
+    }
+    else if(aux2.Tipo===Tipo_Valor.NULL){
+        aux.Valor=null
+        aux.Tipo=Tipo_Valor.NULL
     }
     else if(aux.Tipo===Tipo_Valor.NULL){
         aux.Valor=JSON.parse(JSON.stringify(aux2.Valor))
@@ -421,7 +469,7 @@ function MasAsigExecute(instruccion,ts){
     let aux = ejecutarValor(instruccion.ID,ts)
     //Se obtiene valor a asignar
     let aux2 = ejecutarValor(instruccion.Valor,ts)
-    if(aux.Tipo===aux2.Tipo||aux.Tipo===Tipo_Valor.NULL){
+    if(aux.Tipo===aux2.Tipo){
         aux.Valor+=aux2.Valor
     }
     else{
@@ -592,9 +640,10 @@ function WhileExecute(instruccion,ts){
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
         try{
             while(ExpBool.Valor){
+                let newTS2 = new TablaSimbolos(newTS.simbolos);
                 if(instruccion.Instrucciones!==undefined){
                     try{    
-                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS2):EjecutarBloque([instruccion.Instrucciones],newTS2)
                     }
                     catch(e){
                         if(e instanceof Continue){console.log("CONTINUE!")}
@@ -624,9 +673,10 @@ function DoWhileExecute(instruccion,ts){
     let ExpBool 
     try{
         do{
+            let newTS2 = new TablaSimbolos(newTS.simbolos);
             if(instruccion.Instrucciones!==undefined){
                 try{    
-                Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS2):EjecutarBloque([instruccion.Instrucciones],newTS2)
                 }
                 catch(e){
                     if(e instanceof Continue){console.log("CONTINUE!")}
@@ -659,9 +709,10 @@ function ForExecute(instruccion,ts){
     if(ExpBool.Tipo===Tipo_Valor.BOOLEAN){
         try{
             while(ExpBool.Valor){
+                let newTS2 = new TablaSimbolos(newTS.simbolos);
                 if(instruccion.Instrucciones!==undefined){
                     try{    
-                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS2):EjecutarBloque([instruccion.Instrucciones],newTS2)
                     }
                     catch(e){
                         if(e instanceof Continue){console.log("CONTINUE!")}
@@ -698,9 +749,10 @@ function ForOfExecute(instruccion,ts){
         try{
             while(aux2.Valor[cont]!==undefined){
                 newTS.actualizar(aux.ID,aux2.Valor[cont])
+                let newTS2 = new TablaSimbolos(newTS.simbolos);
                 if(instruccion.Instrucciones!==undefined){
                     try{    
-                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS2):EjecutarBloque([instruccion.Instrucciones],newTS2)
                     }
                     catch(e){
                         if(e instanceof Continue){console.log("CONTINUE!")}
@@ -736,9 +788,10 @@ function ForInExecute(instruccion,ts){
         try{
             while(aux2.Valor[cont]!==undefined){
                 newTS.actualizar(aux.ID,{Tipo:Tipo_Valor.NUMBER,Valor:cont})
+                let newTS2 = new TablaSimbolos(newTS.simbolos);
                 if(instruccion.Instrucciones!==undefined){
                     try{    
-                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS):EjecutarBloque([instruccion.Instrucciones],newTS)
+                    Array.isArray(instruccion.Instrucciones)?EjecutarBloque(instruccion.Instrucciones,newTS2):EjecutarBloque([instruccion.Instrucciones],newTS2)
                     }
                     catch(e){
                         if(e instanceof Continue){console.log("CONTINUE!")}

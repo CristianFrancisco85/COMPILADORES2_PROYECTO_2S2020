@@ -13,3 +13,8 @@
     border-top: none;
     padding-bottom: 25px;
 }
+
+h4{
+    display: inline-block;
+    float: left;
+}
