@@ -603,6 +603,11 @@ function IfExecute(instruccion,ts){
     }
 }
 
+/**
+ * Ejecuta una sentencia de switch
+ * @param {*} instruccion 
+ * @param {*} ts 
+ */
 function SwitchExecute(instruccion,ts){
     //Se obtiene referencia del valor a evaluar
     let aux = ejecutarValor(instruccion.Expresion,ts)
@@ -623,6 +628,9 @@ function SwitchExecute(instruccion,ts){
     }
     catch(e){
         if(e instanceof Break){console.log("BREAK!")}
+        else{
+            throw e
+        }
     }
 }
 
@@ -1185,8 +1193,12 @@ function crearObjeto(valor,ts){
  * @param {*} valor 
  */
 function procesarCadena(valor){
-    //valor.valor=valor.Valor.replace("t","n");
-    //console.log(valor.Valor)
+    valor.Valor= String(valor.Valor).replaceAll(/\\n/g,'\n')
+    valor.Valor= String(valor.Valor).replaceAll(/\\r/g,'\r')
+    valor.Valor= String(valor.Valor).replace(/\\t/g,'\t')
+    valor.Valor= String(valor.Valor).replace(/\\\\/g,'\\')
+    valor.Valor= String(valor.Valor).replace(/\\"/g,"\"")
+    console.log(valor.Valor)
     return valor
 }
 

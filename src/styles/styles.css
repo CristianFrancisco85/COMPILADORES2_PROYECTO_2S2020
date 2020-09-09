@@ -18,3 +18,7 @@ h4{
     display: inline-block;
     float: left;
 }
+
+.CodeMirror.cm-s-darcula {
+    height: 500px;
+}

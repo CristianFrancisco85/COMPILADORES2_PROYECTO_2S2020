@@ -54,9 +54,9 @@ function Editor(){
 function Viewer(){
   
  return (
-    <div className="col-md-6 divcontent " >
+    <div className="col-md-6 divcontent ">
       <h3>Salida</h3>
-      <CodeMirror  
+      <CodeMirror 
         onCursorActivity={(editor, data, value) => {setLC(editor,document.getElementById("LCViewer"))}}
         editorDidMount ={ (editor) => setViewer(editor) }
         options={{
