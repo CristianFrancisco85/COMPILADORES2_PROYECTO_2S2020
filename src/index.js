@@ -27,6 +27,7 @@ import {setConsole} from './scripts/mainScript.js'
 import {translate} from './scripts/mainScript.js'
 import {execute} from './scripts/mainScript.js'
 import TablaSimbolos from './components/TablaSimbolos/TablaSimbolos';
+import TreeView from './components/TreeView/TreeView';
 
 
 //Creacion de areas de codigo
@@ -115,7 +116,13 @@ function MainComponent(){
 
   return (
 
-    <div className="container col-md-12">
+    <div>
+      <div className="jumbotron text-center" style={{backgroundColor:'#2b7cc7'}}>
+      <h1>MatrioshTS IDE</h1>
+      <h5>Traductor - Interprete</h5>
+      </div>
+
+      <div className="container col-md-12">
       
       <div className=" row justify-content-center col-md-12 divcontent">
         <BtnTranslate ></BtnTranslate>
@@ -148,7 +155,11 @@ function MainComponent(){
 
       <TablaSimbolos Arr={Simbolos} Title="Traduccion"></TablaSimbolos>
       <TablaSimbolos Arr={Simbolos2} Title="Ejecucion"></TablaSimbolos>
+      <TreeView></TreeView>
 
+
+      </div>
+    
     </div>
     
   );

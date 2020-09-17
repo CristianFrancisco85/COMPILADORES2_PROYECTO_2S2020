@@ -1,7 +1,7 @@
 import { Tipo_Instruccion } from './Instrucciones.js';
 import { Tipo_Operacion } from './Instrucciones.js';
 import { Tipo_Valor } from './Instrucciones.js';
-import {Simbolos} from '../scripts/mainScript.js'
+import {Simbolos, CodeTxt} from '../scripts/mainScript.js'
 
 const _ = require('lodash')
 
@@ -12,6 +12,8 @@ let AST;
 let BanderaFun
 //Arreglo de funciones desanidadas
 let Funciones
+//Arreglo para reemplazar llamadas de funciones
+let FuncionesReplace
 
 /**
  * Crea un símbolo en la tabla
@@ -72,6 +74,7 @@ class TablaSimbolos {
 export function Traducir (Instrucciones){
     BanderaFun=false
     Funciones=[]
+    FuncionesReplace=[]
     let Global = new TablaSimbolos([])
     AST=Instrucciones;
     let Code=TraducirBloque(AST,undefined,Global)
@@ -82,6 +85,9 @@ export function Traducir (Instrucciones){
                     AST.push(element2)
                 });
             }
+        });
+        FuncionesReplace.forEach(element => {
+            Code =Code.replaceAll(element.ID1,element.ID2);
         });
         console.log(AST)
     }
@@ -186,7 +192,9 @@ function TraducirBloque(Instrucciones,PuntoComa,TS){
         }
         else if(instruccion.Tipo===Tipo_Instruccion.RETURN){
             Code+="return ";
-            if(instruccion.Valor!==undefined){Code+=traducirValor(instruccion.Valor)}
+            if(instruccion.Valor!==undefined){
+                Code+=traducirValor(instruccion.Valor)
+            }
             Code+=";\n"
         }
         else{
@@ -293,7 +301,7 @@ function MasAsigToString(instruccion){
  */
 function AsigArrToString(instruccion){
     let TempTxt="";
-    TempTxt+=instruccion.ID+"=["+traducirValor(instruccion.Posicion)+"]"
+    TempTxt+=instruccion.ID+"["+traducirValor(instruccion.Posicion)+"]"
     if(instruccion.Posicion2!==undefined){TempTxt+="["+traducirValor(instruccion.Posicion2)+"]"}
     TempTxt+="="+traducirValor(instruccion.Valor)
 
@@ -306,7 +314,7 @@ function AsigArrToString(instruccion){
  */
 function MasAsigArrToString(instruccion){
     let TempTxt="";
-    TempTxt+=instruccion.ID+"=["+traducirValor(instruccion.Posicion)+"]"
+    TempTxt+=instruccion.ID+"["+traducirValor(instruccion.Posicion)+"]"
     if(instruccion.Posicion2!==undefined){TempTxt+="["+traducirValor(instruccion.Posicion2)+"]"}
     TempTxt+="+="+traducirValor(instruccion.Valor)
 
@@ -351,12 +359,10 @@ function IfToString(instruccion,TS){
  */
 function TernarioToString(instruccion,TS){   
     let TempTxt=""
-    let newTS=new TablaSimbolos(TS.simbolos)
     TempTxt+=traducirValor(instruccion.ExpresionLogica)+"?"
-    if(instruccion.InstruccionesIf!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesIf,false,newTS)}
+    if(instruccion.InstruccionesIf!==undefined){TempTxt+=traducirValor(instruccion.InstruccionesIf)}
     TempTxt+=":"
-    if(instruccion.InstruccionesElse!==undefined){TempTxt+=TraducirBloque(instruccion.InstruccionesElse,false,newTS)}
-    TempTxt+=";"
+    if(instruccion.InstruccionesElse!==undefined){TempTxt+=traducirValor(instruccion.InstruccionesElse)}
     return TempTxt
 }
 
@@ -479,7 +485,8 @@ function FunToString(instruccion,TS){
         BanderaFun=true;
         TempFunciones.forEach(element => {
             element.Padre=instruccion.ID
-            element.ID=instruccion.ID+"_"+element.ID
+            FuncionesReplace.push({ID1:element.ID,ID2:instruccion.ID+"_"+element.ID})
+            //element.ID=instruccion.ID+"_"+element.ID
             TempTxt+=FunToString(element,newTS)
         });
     }   
@@ -560,6 +567,9 @@ function traducirValor(valor){
     }
     else if(valor.Tipo===Tipo_Instruccion.LLAMADA_FUNCION){
         return CallFunToString(valor);
+    }
+    else if(valor.Tipo===Tipo_Instruccion.BLOQUE_TERNARIO){
+        return TernarioToString(valor) 
     }
     else if(valor.OpTipo!==undefined){
         return traducirOperacionBinaria(valor);

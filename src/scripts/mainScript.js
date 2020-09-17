@@ -8,7 +8,7 @@ export let CodeTxt="",TraduccionTxt="";
 export let Viewer,Console
 export let Simbolos=[]
 export let Simbolos2=[]
-let AST
+export let AST
 
 parser.yy.parseError = function(msg, hash) {
     ErroresSintacticos.push(
@@ -41,7 +41,7 @@ export function translate(){
         TraduccionTxt=Traducir(JSON.parse(JSON.stringify(AST.AST)));
         Viewer.setValue(TraduccionTxt)
         AST.AST=ReturnAST()
-        //console.log(JSON.stringify(AST,null,2));
+        console.log(JSON.stringify(AST,null,2));
     } 
     catch (e) {
         console.error(e.message);
@@ -87,11 +87,11 @@ function refreshErrores(){
     if(AST!==undefined){
         if(AST.ErroresLexicos.length>0){
             setErrorLexico(AST.ErroresLexicos)
-        }
-        if(ErroresSintacticos.length>0){
+        }   
+    }
+    if(ErroresSintacticos.length>0){
             setErrorSintactico(ErroresSintacticos)
         }
-    }
 }
 
 function setErrorLexico(Errores){

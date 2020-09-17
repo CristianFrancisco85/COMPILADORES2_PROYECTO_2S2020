@@ -78,7 +78,7 @@ class TablaSimbolos extends React.Component {
       }
     }
     else if(typeof valor.Valor==="object"){
-      return JSON.stringify(valor.Valor)
+      return JSON.stringify(valor.Valor,null,2)
       /*function replacer(key, value){
         if(typeof value === "object"){ return "Object{}"};
         return value;

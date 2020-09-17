@@ -79,8 +79,8 @@
 
 
 \"(\\\"|[^\"])*\"			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
-\'(\\\"|[^\"])*\'			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
-\`(\\\"|[^\"])*\`  			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
+\'(\\\"|[^\'])*\'			{ yytext = yytext.substr(1,yyleng-2); return 'CADENA'; }
+\`(\\\"|[^\`])*\`           { yytext = yytext.substr(1,yyleng-2); return 'CADENA';}
 [0-9]+("."[0-9]+)?\b        return 'NUMERO'
 ([a-zA-Z])[a-zA-Z0-9_]*	    return 'ID';
 <<EOF>>                     return 'EOF';
@@ -100,7 +100,7 @@
 %left 'DIGUAL' 'NIGUAL'
 %left 'MAYOR' 'MENOR' 'MENORIG' 'MAYORIG'
 %left 'OPMAS' 'OPMENOS'
-%left 'OPMOD' 'OPDIVISION' 'OPMULTI'
+%left 'OPMOD' 'OPDIV' 'OPMULTI'
 %left 'OPCIRCU'
 %right  'UMENOS' 'NOT'
 %nonassoc 'DECREMENTO' 'INCREMENTO'
@@ -228,7 +228,7 @@ expresion
     | OPMENOS expresion %prec UMENOS	    { $$ = AST_Tools.operacionBinaria ($2,undefined,Tipo_Operacion.NEGACION); }
     | expresion OPMENOS expresion		    { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.RESTA);}
 	| expresion OPMAS expresion	            { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.SUMA);}	
-	| expresion OPDIVISION expresion		{ $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.DIVISON);}				
+	| expresion OPDIV expresion		        { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.DIVISION);}				
     | expresion OPMOD expresion	            { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MODULO);}
     | expresion OPCIRCU expresion           { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.POTENCIA);}
     | expresion OPMULTI expresion           { $$ = AST_Tools.operacionBinaria($1, $3, Tipo_Operacion.MULTIPLICACION);}
@@ -304,6 +304,7 @@ sentenciasTransferencia
     | CONTINUE PUNTOYCOMA               {$$=AST_Tools.nuevoContinue();}  
     | RETURN PUNTOYCOMA                 {$$=AST_Tools.nuevoReturn(undefined);} 
     | RETURN expresion PUNTOYCOMA       {$$=AST_Tools.nuevoReturn($2);} 
+    | RETURN bloqueTernario             {$$=AST_Tools.nuevoReturn($2)}
 ;
 
 /* GRAMATICAS DESCENDENTES :O */
@@ -344,8 +345,8 @@ bloqueElse
 ;
 
 bloqueTernario
-    : expresion TERNARIO instrucciones DOSPUNTOS instrucciones PUNTOYCOMA {$$=AST_Tools.nuevoTernario($1,$3,$5)}
-    | expresion TERNARIO instrucciones PUNTOYCOMA                         {$$=AST_Tools.nuevoTernario($1,$2,undefined)}
+    : expresion TERNARIO expresion DOSPUNTOS expresion PUNTOYCOMA     {$$=AST_Tools.nuevoTernario($1,$3,$5)}
+    | expresion TERNARIO expresion PUNTOYCOMA                         {$$=AST_Tools.nuevoTernario($1,$2,undefined)}
 ;
 
 bloqueSwitch
@@ -372,8 +373,8 @@ bloqueWhile
 ;
 
 bloqueDoWhile
-    : DO LLAVIZQ instrucciones LLAVDER WHILE PARIZQ expresion PARDER     {$$= AST_Tools.nuevoDoWhile($7,$3);}
-    | DO LLAVIZQ LLAVDER WHILE PARIZQ expresion PARDER                   {$$= AST_Tools.nuevoDoWhile($6,undefined);}
+    : DO LLAVIZQ instrucciones LLAVDER WHILE PARIZQ expresion PARDER PUNTOYCOMA     {$$= AST_Tools.nuevoDoWhile($7,$3);}
+    | DO LLAVIZQ LLAVDER WHILE PARIZQ expresion PARDER PUNTOYCOMA                   {$$= AST_Tools.nuevoDoWhile($6,undefined);}
 ;
 
 bloqueFor
