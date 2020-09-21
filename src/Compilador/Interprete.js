@@ -3,6 +3,7 @@ import { Tipo_Operacion } from './Instrucciones.js';
 import { Tipo_Valor } from './Instrucciones.js';
 import { Console } from '../scripts/mainScript.js';
 import {Simbolos2 as Simbolos} from '../scripts/mainScript.js'
+import {traducirArray} from './Traductor.js'
 
 const _ = require('lodash')
 
@@ -447,14 +448,20 @@ function AsigExecute(instruccion,ts){
     //Se obtiene valor a asignar
     let aux2 = ejecutarValor(instruccion.Valor,ts)
     if(aux.Tipo===aux2.Tipo||aux.Tipo===undefined){
-        aux.Valor=aux2.Valor
-        aux.Tipo=aux2.Tipo
+        if(typeof aux2.Valor === 'object'){
+            aux.Valor=aux2.Valor
+            aux.Tipo=aux2.Tipo
+        }
+        else{
+            aux.Valor=JSON.parse(JSON.stringify(aux2.Valor))
+            aux.Tipo=JSON.parse(JSON.stringify(aux2.Tipo))
+        }
     }
     else if(aux2.Tipo===Tipo_Valor.NULL){
         aux.Valor=null
         aux.Tipo=Tipo_Valor.NULL
     }
-    else if(aux.Tipo===Tipo_Valor.NULL){
+    else if(aux.Tipo===Tipo_Valor.NULL){  
         aux.Valor=JSON.parse(JSON.stringify(aux2.Valor))
         aux.Tipo=JSON.parse(JSON.stringify(aux2.Tipo))
     }
@@ -527,14 +534,9 @@ function ArrayAsigExecute(instruccion,ts){
         }
     }
     else{
+        //Se obtiene primera posicion
         posVal1=aux.Valor[Number(ejecutarValor(instruccion.Posicion,ts).Valor)]
-        //Si la posicion es undefined
-        if(posVal1===undefined){
-            aux.Valor[ejecutarValor(instruccion.Posicion,ts).Valor]=newVal
-        }
-        else{
-            posVal1=newVal
-        }
+        aux.Valor[ejecutarValor(instruccion.Posicion,ts).Valor]=newVal  
     }
 
     //Se verifican tipos
@@ -962,6 +964,12 @@ function ejecutarOperacionBinaria(valor,ts){
             if(OpIzq.Tipo===Tipo_Valor.NUMBER && OpDer.Tipo===Tipo_Valor.STRING){
                 return {Valor:Number(OpIzq.Valor).toString()+OpDer.Valor,Tipo:Tipo_Valor.STRING}
             }
+            if(OpIzq.Tipo===Tipo_Valor.STRING && OpDer.Tipo.includes("ARR")){
+                return {Valor:OpIzq.Valor+traducirArray(OpDer.Valor),Tipo:Tipo_Valor.STRING}
+            }
+            if(OpIzq.Tipo.includes("ARR") && OpDer.Tipo===Tipo_Valor.STRING){
+                return {Valor:traducirArray(OpIzq.Valor)+OpDer.Valor,Tipo:Tipo_Valor.STRING}
+            }
             if(OpIzq.Tipo===Tipo_Valor.STRING && OpDer.Tipo===Tipo_Valor.STRING){
                 return {Valor:OpIzq.Valor+OpDer.Valor,Tipo:Tipo_Valor.STRING}
             }
@@ -1112,7 +1120,7 @@ function ejecutarOperacionBinaria(valor,ts){
                     //Si es a un atributo
                     else{
                         if(OpIzq===null){
-                            return null
+                            return {Valor:null,Tipo:Tipo_Valor.NULL}
                         }
                         return OpIzq[OpDer]
                     }
@@ -1124,7 +1132,7 @@ function ejecutarOperacionBinaria(valor,ts){
         case Tipo_Operacion.ACCESO_ARR:
             if(Array.isArray(OpIzq)){
                 if(OpDer.Tipo===Tipo_Valor.NUMBER){
-                    return OpIzq[Number(OpDer.Valor)]
+                    return OpIzq[parseInt(OpDer.Valor)]
                 }
                 else{
                     throw Error("No se puede a array sin expresion numerica");
@@ -1132,7 +1140,7 @@ function ejecutarOperacionBinaria(valor,ts){
             }
             else if(Array.isArray(OpIzq.Valor)){
                 if(OpDer.Tipo===Tipo_Valor.NUMBER){
-                    return OpIzq.Valor[Number(OpDer.Valor)]
+                    return OpIzq.Valor[parseInt(OpDer.Valor)]
                 }
                 else{
                     throw Error("No se puede a array sin expresion numerica");
