@@ -8,7 +8,7 @@ export let CodeTxt="",TraduccionTxt="";
 export let Viewer,Console
 export let Simbolos=[]
 export let Simbolos2=[]
-export let AST
+export let AST,ASTData
 
 parser.yy.parseError = function(msg, hash) {
     ErroresSintacticos.push(
@@ -47,6 +47,7 @@ export function translate(){
         console.error(e.message);
     }
     finally{
+        ASTData=AST.AST
         refreshErrores()
     }
 }
@@ -70,12 +71,13 @@ export function execute(){
     else{
         Ejecutar(AST.AST)
     }   
-    AST=undefined
     }
     catch(e){
         console.error(e);
     }
     finally{
+        ASTData=AST.AST
+        AST=undefined
         refreshErrores()
     }
 }
