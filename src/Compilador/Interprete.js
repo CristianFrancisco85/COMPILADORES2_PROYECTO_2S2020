@@ -149,7 +149,7 @@ export function Ejecutar(ast){
     //Tabla de simbolos Global
     Console.setValue("")
     Global=new TablaSimbolos([])
-    BuscarDec(ast,Global)
+    BuscarDec(ast,Global,false)
     EjecutarBloque(ast,Global,true)
     console.log(Global.getsimbolos());
 
@@ -265,18 +265,19 @@ function EjecutarBloque(Instrucciones,TablaSimbolos,Bool){
  * @param {*} Instrucciones 
  * @param {*} TablaSimbolos
  * @param {*} Global Indica si para un ambito global 
+ * @param {*} Indica si se buscara por declaracion de let y const
  */
-function BuscarDec(Instrucciones,TablaSimbolos){
+function BuscarDec(Instrucciones,TablaSimbolos,bool){
     Instrucciones.forEach(instruccion => {
 
     try{
         if(instruccion===undefined){
             //throw new Error("Intruccion Invalida")
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET && bool){
             LetDecExecute(instruccion,TablaSimbolos,true)
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST){
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST && bool){
             ConstDecExecute(instruccion,TablaSimbolos,true)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE){
@@ -1264,7 +1265,7 @@ function getAmbito(fun,newTS){
     if(fun.Padre!==undefined){
         let funPadre = ejecutarValor(fun.Padre,newTS);
         getAmbito(funPadre,newTS)
-        Array.isArray(funPadre.Valor.Instrucciones)?BuscarDec(funPadre.Valor.Instrucciones,newTS):BuscarDec([funPadre.Valor.Instrucciones],newTS)
+        Array.isArray(funPadre.Valor.Instrucciones)?BuscarDec(funPadre.Valor.Instrucciones,newTS,true):BuscarDec([funPadre.Valor.Instrucciones],newTS,true)
     }
 
 }
