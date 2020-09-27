@@ -47,7 +47,9 @@ export function translate(){
         console.error(e.message);
     }
     finally{
+        if(AST!==undefined){
         ASTData=AST.AST
+        }
         refreshErrores()
     }
 }
@@ -76,7 +78,9 @@ export function execute(){
         console.error(e);
     }
     finally{
+        if(AST!==undefined){
         ASTData=AST.AST
+        }
         AST=undefined
         refreshErrores()
     }

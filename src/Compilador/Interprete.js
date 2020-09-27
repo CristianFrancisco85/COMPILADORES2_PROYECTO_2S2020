@@ -150,7 +150,7 @@ export function Ejecutar(ast){
     Console.setValue("")
     Global=new TablaSimbolos([])
     BuscarDec(ast,Global,false)
-    EjecutarBloque(ast,Global,true)
+    EjecutarBloque(ast,Global,true,true)
     console.log(Global.getsimbolos());
 
 }
@@ -161,7 +161,7 @@ export function Ejecutar(ast){
  * @param {*} TablaSimbolos 
  * @param {*} Bool Indica si ignorar declaraciones o no
  */
-function EjecutarBloque(Instrucciones,TablaSimbolos,Bool){
+function EjecutarBloque(Instrucciones,TablaSimbolos,Bool,Bool2){
 
     Instrucciones.forEach(instruccion => {
 
@@ -169,11 +169,11 @@ function EjecutarBloque(Instrucciones,TablaSimbolos,Bool){
         if(instruccion===undefined){
             //throw new Error("Intruccion Invalida")
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET&&Bool===undefined){
-            LetDecExecute(instruccion,TablaSimbolos)
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_LET){
+            LetDecExecute(instruccion,TablaSimbolos,Bool2)
         }
-        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST&&Bool===undefined){
-            ConstDecExecute(instruccion,TablaSimbolos)
+        else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_CONST){
+            ConstDecExecute(instruccion,TablaSimbolos,Bool2)
         }
         else if(instruccion.Tipo===Tipo_Instruccion.DECLARACION_TYPE&&Bool===undefined){
             TypeDecExecute(instruccion,TablaSimbolos);
